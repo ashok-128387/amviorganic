@@ -150,6 +150,7 @@ function CertificationCarousel() {
 function CustomerReviewsCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(4);
+  const [mounted, setMounted] = useState(false);
 
   const reviews = [
     {
@@ -202,6 +203,7 @@ function CustomerReviewsCarousel() {
     };
 
     updateVisibleCount();
+    setMounted(true);
     window.addEventListener('resize', updateVisibleCount);
     return () => window.removeEventListener('resize', updateVisibleCount);
   }, []);
@@ -325,7 +327,7 @@ function CustomerReviewsCarousel() {
           background: #ffffff;
           border-radius: 16px;
           padding: 28px 26px 24px;
-          flex: 0 0 calc(${100 / visibleCount}% - ${visibleCount > 1 ? 15 : 0}px);
+          flex: 0 0 calc(${mounted ? 100 / visibleCount : 25}% - ${mounted && visibleCount > 1 ? 15 : 0}px);
           min-width: 0;
           display: flex;
           flex-direction: column;
@@ -464,6 +466,7 @@ export default function Home() {
   const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : combos;
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab === 'combo') setActiveCategory('Combo Deals');
