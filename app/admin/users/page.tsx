@@ -1,13 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminStore } from '@/lib/admin-store';
 import { Trash2, Search, Users, Mail, Calendar } from 'lucide-react';
 
 export default function AdminUsersPage() {
-  const { users, deleteRegisteredUser } = useAdminStore();
+  const { users, deleteRegisteredUser, addRegisteredUser } = useAdminStore();
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/users-get')
+      .then(r => r.json())
+      .then(({ users: dbUsers }) => {
+        if (!dbUsers) return;
+        const existing = useAdminStore.getState().users.map(u => u.id);
+        dbUsers.forEach((u: any) => {
+          if (!existing.includes(u.id)) addRegisteredUser(u);
+        });
+      });
+  }, []);
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
