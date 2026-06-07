@@ -84,8 +84,6 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full" style={{ background: '#fff', borderBottom: '1px solid #f0ece6', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-      <div style={{ height: '3px', background: 'linear-gradient(90deg, #c8922a, #e8b84b, #c8922a)' }} />
-
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-3">
 

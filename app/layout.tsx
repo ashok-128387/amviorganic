@@ -50,6 +50,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} scroll-smooth`}>
       <body className="font-sans antialiased bg-white text-gray-900">
         <MarqueeBanner />
+        <div style={{ height: '3px', background: 'linear-gradient(90deg, #c8922a, #e8b84b, #c8922a)', position: 'sticky', top: 0, zIndex: 51 }} />
         <Header />
         <CartDrawer />
         <main>{children}</main>
