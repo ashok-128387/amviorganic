@@ -10,18 +10,19 @@ export default function AdminLoginPage() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      // Manually set adminLoggedIn in localStorage so Zustand picks it up
-      try {
-        const stored = localStorage.getItem('amvi-admin-store-v2');
-        const parsed = stored ? JSON.parse(stored) : { state: {} };
-        parsed.state.adminLoggedIn = true;
-        localStorage.setItem('amvi-admin-store-v2', JSON.stringify(parsed));
-      } catch (_) {}
-      window.location.replace('/admin');
-    } else {
+    if (password !== ADMIN_PASSWORD) {
       setError('Incorrect password. Try again.');
+      return;
     }
+    try {
+      const key = 'amvi-admin-store-v2';
+      const existing = localStorage.getItem(key);
+      const data = existing ? JSON.parse(existing) : { state: {}, version: 0 };
+      if (!data.state) data.state = {};
+      data.state.adminLoggedIn = true;
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (_) {}
+    window.location.href = '/admin';
   };
 
   return (
