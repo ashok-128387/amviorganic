@@ -22,15 +22,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
-    if (!adminLoggedIn && pathname !== '/admin/login') {
+    if (hydrated && !adminLoggedIn && pathname !== '/admin/login') {
       router.replace('/admin/login');
     }
-  }, [adminLoggedIn, pathname]);
+  }, [hydrated, adminLoggedIn, pathname]);
 
-  if (!adminLoggedIn && pathname !== '/admin/login') return null;
   if (pathname === '/admin/login') return <>{children}</>;
+  if (!hydrated) return null;
+  if (!adminLoggedIn) return null;
 
   const Sidebar = (
     <div className="flex flex-col h-full">
