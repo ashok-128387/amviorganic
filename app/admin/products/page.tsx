@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAdminStore, AdminProduct } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
 
@@ -18,6 +18,17 @@ export default function AdminProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [imgTab, setImgTab] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: dbProducts }) => {
+      if (!dbProducts?.length) return;
+      const existing = useAdminStore.getState().products.map(p => p.id);
+      dbProducts.forEach((p: any) => {
+        if (!existing.includes(p.id)) addProduct({ ...p, createdAt: new Date(p.createdAt) });
+        else updateProduct(p.id, { ...p, createdAt: new Date(p.createdAt) });
+      });
+    });
+  }, []);
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
   const openEdit = (p: AdminProduct) => {
@@ -62,6 +73,7 @@ export default function AdminProductsPage() {
     };
     if (editId) updateProduct(editId, product);
     else addProduct(product);
+    fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: product.createdAt.toISOString() }) });
     setShowForm(false);
   };
 
@@ -132,7 +144,7 @@ export default function AdminProductsPage() {
                       </button>
                       {deleteConfirm === p.id ? (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { deleteProduct(p.id); setDeleteConfirm(null); }}
+                          <button onClick={() => { deleteProduct(p.id); setDeleteConfirm(null); fetch('/api/product-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id }) }); }}
                             className="p-1.5 rounded-lg hover:bg-red-50 transition"><Check size={15} className="text-red-500" /></button>
                           <button onClick={() => setDeleteConfirm(null)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 transition"><X size={15} className="text-gray-400" /></button>
