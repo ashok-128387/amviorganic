@@ -93,19 +93,37 @@ export default function CheckoutPage() {
     return true;
   };
 
+  const loadRazorpayScript = () =>
+    new Promise<boolean>(resolve => {
+      if (window.Razorpay) return resolve(true);
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+
   const handleRazorpayPayment = async () => {
     if (!validateForm()) return;
     setLoading(true);
     setError('');
     try {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => {
-        const options = {
-          key: 'rzp_test_1AxFxC9T8E3q9X',
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error('Razorpay SDK failed to load');
+
+      const res = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: total }),
+      });
+      const { orderId, error: orderError } = await res.json();
+      if (orderError) throw new Error(orderError);
+
+      const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: total * 100,
           currency: 'INR',
+          order_id: orderId,
           name: 'AMVI Organics',
           description: `Order for ${cart.length} item(s)`,
           prefill: {
@@ -164,10 +182,8 @@ export default function CheckoutPage() {
         const rzp = new window.Razorpay(options);
         rzp.open();
         setLoading(false);
-      };
-      document.head.appendChild(script);
-    } catch {
-      setError('Failed to initialize payment. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to initialize payment. Please try again.');
       setLoading(false);
     }
   };
