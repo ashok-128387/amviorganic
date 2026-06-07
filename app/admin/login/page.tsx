@@ -2,19 +2,20 @@
 
 import { useState } from 'react';
 import { useAdminStore } from '@/lib/admin-store';
-import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
   const { adminLogin } = useAdminStore();
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const ok = adminLogin(password);
-    if (ok) setTimeout(() => { window.location.href = '/admin'; }, 100);
-    else setError('Incorrect password. Try again.');
+    if (ok) {
+      setTimeout(() => { window.location.replace('/admin'); }, 150);
+    } else {
+      setError('Incorrect password. Try again.');
+    }
   };
 
   return (
