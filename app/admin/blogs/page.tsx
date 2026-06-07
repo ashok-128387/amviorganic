@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useAdminStore, BlogPost } from '@/lib/admin-store';
+import { useState, useEffect } from 'react';
+import { BlogPost } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Eye, EyeOff } from 'lucide-react';
 
 const EMPTY: Omit<BlogPost, 'id' | 'createdAt'> = {
@@ -13,11 +13,15 @@ function slugify(str: string) {
 }
 
 export default function AdminBlogsPage() {
-  const { blogs, addBlog, updateBlog, deleteBlog } = useAdminStore();
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
+  }, []);
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true); };
   const openEdit = (b: BlogPost) => {
@@ -25,14 +29,15 @@ export default function AdminBlogsPage() {
     setEditId(b.id); setShowForm(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim()) return;
     const slug = form.slug || slugify(form.title);
-    if (editId) {
-      updateBlog(editId, { ...form, slug });
-    } else {
-      addBlog({ ...form, slug, id: `b-${Date.now()}`, createdAt: new Date().toISOString() });
-    }
+    const blog: BlogPost = editId
+      ? { ...blogs.find(b => b.id === editId)!, ...form, slug }
+      : { ...form, slug, id: `b-${Date.now()}`, createdAt: new Date().toISOString() };
+    await fetch('/api/blog-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(blog) });
+    const { blogs: updated } = await fetch('/api/blogs-get').then(r => r.json());
+    if (updated) setBlogs(updated);
     setShowForm(false);
   };
 
@@ -66,7 +71,7 @@ export default function AdminBlogsPage() {
               <p className="text-xs text-gray-500 line-clamp-2 flex-1">{b.excerpt}</p>
               <p className="text-xs text-gray-400 mt-2">{new Date(b.createdAt).toLocaleDateString('en-IN')}</p>
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-                <button onClick={() => updateBlog(b.id, { published: !b.published })}
+                <button onClick={async () => { const updated = { ...b, published: !b.published }; await fetch('/api/blog-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }); setBlogs(bs => bs.map(x => x.id === b.id ? updated : x)); }}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                   style={{ background: b.published ? '#f5f2ed' : '#1e4a2a18', color: b.published ? '#555' : '#1e4a2a' }}>
                   {b.published ? <><EyeOff size={12} /> Unpublish</> : <><Eye size={12} /> Publish</>}
@@ -77,7 +82,7 @@ export default function AdminBlogsPage() {
                 </button>
                 {deleteConfirm === b.id ? (
                   <>
-                    <button onClick={() => { deleteBlog(b.id); setDeleteConfirm(null); }}
+                    <button onClick={async () => { await fetch('/api/blog-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: b.id }) }); setBlogs(bs => bs.filter(x => x.id !== b.id)); setDeleteConfirm(null); }}
                       className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition">Confirm</button>
                     <button onClick={() => setDeleteConfirm(null)}
                       className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancel</button>

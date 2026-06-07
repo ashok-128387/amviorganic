@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useAdminStore, AdminProduct } from '@/lib/admin-store';
+import { useState, useRef, useEffect } from 'react';
+import { AdminProduct } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
 
 const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
@@ -11,13 +11,17 @@ const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
 };
 
 export default function AdminProductsPage() {
-  const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [imgTab, setImgTab] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+  }, []);
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
   const openEdit = (p: AdminProduct) => {
@@ -49,7 +53,7 @@ export default function AdminProductsPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
     const id = editId ?? `p-${Date.now()}`;
     const product: AdminProduct = {
@@ -58,9 +62,16 @@ export default function AdminProductsPage() {
       variations: form.variations.map((v, i) => ({ ...v, id: v.id || `v-${id}-${i}`, productId: id })),
       createdAt: new Date(),
     };
-    if (editId) updateProduct(editId, product);
-    else addProduct(product);
+    await fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: product.createdAt.toISOString() }) });
+    const { products: updated } = await fetch('/api/products-get').then(r => r.json());
+    if (updated) setProducts(updated);
     setShowForm(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch('/api/product-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setProducts(ps => ps.filter(p => p.id !== id));
+    setDeleteConfirm(null);
   };
 
   const updateVariation = (i: number, field: string, val: string | number) =>
@@ -129,7 +140,7 @@ export default function AdminProductsPage() {
                       </button>
                       {deleteConfirm === p.id ? (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { deleteProduct(p.id); setDeleteConfirm(null); }}
+                          <button onClick={() => handleDelete(p.id)}
                             className="p-1.5 rounded-lg hover:bg-red-50 transition"><Check size={15} className="text-red-500" /></button>
                           <button onClick={() => setDeleteConfirm(null)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 transition"><X size={15} className="text-gray-400" /></button>

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useAdminStore } from '@/lib/admin-store';
+import { useState, useMemo, useEffect } from 'react';
 import ProductCard from '@/components/product-card';
 import CartDrawer from '@/components/cart-drawer';
 import ProductsSidebar, { FilterState, SortOption } from '@/components/products-sidebar';
@@ -10,8 +9,12 @@ const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals'];
 const PRICE_MAX = 1000;
 
 export default function ComboDealsPage() {
-  const { products: allProducts } = useAdminStore();
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [filters, setFilters] = useState<FilterState>({ categories: ['Combo Deals'], maxPrice: PRICE_MAX, sort: 'default' });
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setAllProducts(p); });
+  }, []);
 
   const products = useMemo(() => {
     let list = allProducts.filter((p) => filters.categories.includes(p.category));

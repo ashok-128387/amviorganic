@@ -3,7 +3,6 @@
 import CartDrawer from '@/components/cart-drawer';
 import ProductCard from '@/components/product-card';
 import BannerSlider from '@/components/banner-slider';
-import { mockProducts } from '@/lib/mock-data';
 import { Shield, TrendingUp, Leaf } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Merriweather } from 'next/font/google';
@@ -461,16 +460,19 @@ function CustomerReviewsCarousel() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'Sweeteners' | 'Combo Deals'>('Sweeteners');
-  const sweeteners = mockProducts.filter((p) => p.category === 'Sweeteners');
-  const combos = mockProducts.filter((p) => p.category === 'Combo Deals');
-  const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : combos;
+  const [allProducts, setAllProducts] = useState<any[]>([]);
 
   useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setAllProducts(p); });
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab === 'combo') setActiveCategory('Combo Deals');
   }, []);
+
+  const sweeteners = allProducts.filter((p) => p.category === 'Sweeteners');
+  const combos = allProducts.filter((p) => p.category === 'Combo Deals');
+  const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : combos;
 
   return (
     <>

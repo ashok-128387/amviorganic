@@ -2,11 +2,10 @@
 
 import CartDrawer from '@/components/cart-drawer';
 import { mockReviews } from '@/lib/mock-data';
-import { useAdminStore } from '@/lib/admin-store';
 import { useStore } from '@/lib/store';
 import { Heart, Share2, Copy, MessageCircle, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface ProductPageProps {
@@ -15,8 +14,15 @@ interface ProductPageProps {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { id } = use(params);
-  const { products } = useAdminStore();
-  const product = products.find((p) => p.id === id) ?? null;
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
+      if (products) setProduct(products.find((p: any) => p.id === id) ?? null);
+      setLoading(false);
+    });
+  }, [id]);
 
   const productReviews = mockReviews.filter((r) => r.productId === id);
   const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen } = useStore();
@@ -29,6 +35,12 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [zoomed, setZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [addedMsg, setAddedMsg] = useState(false);
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-400 text-sm">Loading...</p>
+    </div>
+  );
 
   if (!product) return (
     <div className="min-h-screen flex items-center justify-center text-center px-4">
