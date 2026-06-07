@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
+  const normalizedEmail = email.trim().toLowerCase();
   const [name, setName] = useState('');
   const [otp, setOtp] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
@@ -44,8 +45,8 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const generatedOtp = generateOtp(email);
-      await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: generatedOtp }) });
+      const generatedOtp = generateOtp(normalizedEmail);
+      await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail, otp: generatedOtp }) });
       setStep('otp');
       setResendTimer(60);
     } catch {
@@ -83,7 +84,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const valid = verifyOtp(email, finalOtp);
+      const valid = verifyOtp(normalizedEmail, finalOtp);
       if (!valid) {
         setError('Invalid or expired OTP. Please try again.');
         setOtpDigits(['', '', '', '', '', '']);
@@ -91,14 +92,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // Check if new user (mock — in real app query DB)
       const storedUsers = JSON.parse(localStorage.getItem('amvi-users') || '{}');
-      if (!storedUsers[email]) {
+      if (!storedUsers[normalizedEmail]) {
         setIsNewUser(true);
         setStep('name');
       } else {
-        const user = storedUsers[email];
-        setUser({ id: user.id, email, name: user.name, password: '', createdAt: new Date() });
+        const user = storedUsers[normalizedEmail];
+        setUser({ id: user.id, email: normalizedEmail, name: user.name, password: '', createdAt: new Date() });
         router.replace('/');
       }
     } finally {
@@ -112,11 +112,11 @@ export default function LoginPage() {
     setLoading(true);
     const id = `u-${Date.now()}`;
     const storedUsers = JSON.parse(localStorage.getItem('amvi-users') || '{}');
-    storedUsers[email] = { id, name };
+    storedUsers[normalizedEmail] = { id, name };
     localStorage.setItem('amvi-users', JSON.stringify(storedUsers));
-    await fetch('/api/send-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name }) });
-    addRegisteredUser({ id, name, email, registeredAt: new Date().toISOString() });
-    setUser({ id, email, name, password: '', createdAt: new Date() });
+    await fetch('/api/send-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail, name }) });
+    addRegisteredUser({ id, name, email: normalizedEmail, registeredAt: new Date().toISOString() });
+    setUser({ id, email: normalizedEmail, name, password: '', createdAt: new Date() });
     setLoading(false);
     router.replace('/');
   };
@@ -124,8 +124,8 @@ export default function LoginPage() {
   const handleResend = async () => {
     if (resendTimer > 0) return;
     setLoading(true);
-    const generatedOtp = generateOtp(email);
-    await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: generatedOtp }) });
+    const generatedOtp = generateOtp(normalizedEmail);
+    await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail, otp: generatedOtp }) });
     setOtpDigits(['', '', '', '', '', '']);
     setResendTimer(60);
     setError('');

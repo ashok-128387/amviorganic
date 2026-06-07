@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { CartItem, WishlistItem, User, Order } from './mock-data';
 
 interface StoreState {
@@ -32,7 +33,7 @@ interface StoreState {
   setCartOpen: (open: boolean) => void;
 }
 
-export const useStore = create<StoreState>((set, get) => ({
+export const useStore = create<StoreState>()(persist((set, get) => ({
   user: null,
   isLoggedIn: false,
   setUser: (user) => set({ user, isLoggedIn: user !== null }),
@@ -113,4 +114,4 @@ export const useStore = create<StoreState>((set, get) => ({
 
   cartOpen: false,
   setCartOpen: (open) => set({ cartOpen: open }),
-}));
+}), { name: 'amvi-store', partialize: (s) => ({ user: s.user, isLoggedIn: s.isLoggedIn, cart: s.cart, wishlist: s.wishlist, orders: s.orders }) }));
