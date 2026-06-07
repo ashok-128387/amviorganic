@@ -120,7 +120,7 @@ export default function ContactPage() {
               </div>
               <div className="mko-field">
                 <label className="mko-label">Country <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" name="country" value={form.country} onChange={handleChange} defaultValue="India"/>
+                <input className="mko-input" type="text" name="country" value={form.country} onChange={handleChange} />
               </div>
             </div>
 

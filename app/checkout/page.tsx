@@ -1,6 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { useAdminStore } from '@/lib/admin-store';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle } from 'lucide-react';
@@ -13,14 +14,7 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart, isLoggedIn, user, addOrder } = useStore();
-
-  const [products, setProducts] = useState<any[]>([]);
-  const [coupons, setCoupons] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
-    fetch('/api/coupons-get').then(r => r.json()).then(({ coupons: c }) => { if (c) setCoupons(c); });
-  }, []);
+  const { products, validateCoupon } = useAdminStore();
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
@@ -67,15 +61,14 @@ export default function CheckoutPage() {
   const handleApplyCoupon = () => {
     setCouponError('');
     if (!couponInput.trim()) return;
-    const coupon = coupons.find((c: any) => c.code.toUpperCase() === couponInput.trim().toUpperCase());
-    if (!coupon) { setCouponError('Invalid coupon code'); setAppliedCoupon(null); return; }
-    if (!coupon.active) { setCouponError('Coupon is inactive'); setAppliedCoupon(null); return; }
-    if (new Date(coupon.expiresAt) < new Date()) { setCouponError('Coupon has expired'); setAppliedCoupon(null); return; }
-    if (coupon.usedCount >= coupon.maxUses) { setCouponError('Coupon usage limit reached'); setAppliedCoupon(null); return; }
-    if (cartTotal < coupon.minOrder) { setCouponError(`Minimum order ₹${coupon.minOrder} required`); setAppliedCoupon(null); return; }
-    const discount = coupon.type === 'percent' ? Math.round((cartTotal * coupon.value) / 100) : coupon.value;
-    setAppliedCoupon({ code: coupon.code, discount, message: `Coupon applied! You save ₹${discount}` });
-    setCouponInput('');
+    const result = validateCoupon(couponInput.trim(), cartTotal);
+    if (result.valid) {
+      setAppliedCoupon({ code: couponInput.toUpperCase(), discount: result.discount, message: result.message });
+      setCouponInput('');
+    } else {
+      setCouponError(result.message);
+      setAppliedCoupon(null);
+    }
   };
 
   const handleRemoveCoupon = () => {
@@ -231,11 +224,11 @@ export default function CheckoutPage() {
           <ChevronLeft size={20} /> Back to Shopping
         </Link>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Form */}
-          <div className="md:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">{error}</div>
@@ -246,16 +239,14 @@ export default function CheckoutPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <MapPin size={20} /> Delivery Address
                 </h2>
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <input type="text" name="firstName" placeholder="First Name *" value={formData.firstName}
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                   <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName}
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                 </div>
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <input type="email" name="email" placeholder="Email *" value={formData.email}
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-3 focus-within:border-green-700">
@@ -269,7 +260,7 @@ export default function CheckoutPage() {
                   onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700 mb-4 resize-none" />
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-3 gap-4">
                   <input type="text" name="city" placeholder="City *" value={formData.city}
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
@@ -303,8 +294,8 @@ export default function CheckoutPage() {
           </div>
 
           {/* Right: Order Summary */}
-          <div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-8">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
               {/* Cart Items */}

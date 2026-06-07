@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BlogPost } from '@/lib/admin-store';
-import { Pencil, Trash2, Plus, X, Eye, EyeOff, Upload } from 'lucide-react';
 import { uploadImage } from '@/lib/upload';
+import { Pencil, Trash2, Plus, X, Eye, EyeOff, Upload } from 'lucide-react';
 
 const EMPTY: Omit<BlogPost, 'id' | 'createdAt'> = {
   title: '', slug: '', excerpt: '', content: '', image: '', author: 'AMVI Organics Team', published: true,
@@ -22,6 +22,11 @@ export default function AdminBlogsPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const load = () =>
+    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
+
+  useEffect(() => { load(); }, []);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -29,11 +34,8 @@ export default function AdminBlogsPage() {
     const url = await uploadImage(file);
     if (url) setForm(f => ({ ...f, image: url }));
     setUploading(false);
+    if (fileRef.current) fileRef.current.value = '';
   };
-
-  useEffect(() => {
-    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
-  }, []);
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true); };
   const openEdit = (b: BlogPost) => {
@@ -48,9 +50,20 @@ export default function AdminBlogsPage() {
       ? { ...blogs.find(b => b.id === editId)!, ...form, slug }
       : { ...form, slug, id: `b-${Date.now()}`, createdAt: new Date().toISOString() };
     await fetch('/api/blog-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(blog) });
-    const { blogs: updated } = await fetch('/api/blogs-get').then(r => r.json());
-    if (updated) setBlogs(updated);
+    await load();
     setShowForm(false);
+  };
+
+  const handleTogglePublish = async (b: BlogPost) => {
+    const updated = { ...b, published: !b.published };
+    await fetch('/api/blog-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+    await load();
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch('/api/blog-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    setBlogs(bs => bs.filter(x => x.id !== id));
+    setDeleteConfirm(null);
   };
 
   return (
@@ -83,7 +96,7 @@ export default function AdminBlogsPage() {
               <p className="text-xs text-gray-500 line-clamp-2 flex-1">{b.excerpt}</p>
               <p className="text-xs text-gray-400 mt-2">{new Date(b.createdAt).toLocaleDateString('en-IN')}</p>
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-                <button onClick={async () => { const updated = { ...b, published: !b.published }; await fetch('/api/blog-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }); setBlogs(bs => bs.map(x => x.id === b.id ? updated : x)); }}
+                <button onClick={() => handleTogglePublish(b)}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                   style={{ background: b.published ? '#f5f2ed' : '#1e4a2a18', color: b.published ? '#555' : '#1e4a2a' }}>
                   {b.published ? <><EyeOff size={12} /> Unpublish</> : <><Eye size={12} /> Publish</>}
@@ -94,7 +107,7 @@ export default function AdminBlogsPage() {
                 </button>
                 {deleteConfirm === b.id ? (
                   <>
-                    <button onClick={async () => { await fetch('/api/blog-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: b.id }) }); setBlogs(bs => bs.filter(x => x.id !== b.id)); setDeleteConfirm(null); }}
+                    <button onClick={() => handleDelete(b.id)}
                       className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition">Confirm</button>
                     <button onClick={() => setDeleteConfirm(null)}
                       className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancel</button>
@@ -137,18 +150,33 @@ export default function AdminBlogsPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Cover Image</label>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2">
                   <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))}
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
-                    placeholder="/uploads/image.png or paste URL" />
-                  <button type="button" onClick={() => fileRef.current?.click()}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold text-white transition flex-shrink-0"
+                    placeholder="Paste URL or upload →" />
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white flex-shrink-0 disabled:opacity-60 transition"
                     style={{ background: '#1e4a2a' }}>
-                    <Upload size={13} /> {uploading ? 'Uploading...' : 'Upload'}
+                    <Upload size={13} />{uploading ? 'Uploading...' : 'Upload'}
                   </button>
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </div>
-                {form.image && <img src={form.image} className="mt-2 h-20 rounded-lg object-cover border border-gray-100" onError={e => (e.currentTarget.style.display = 'none')} alt="preview" />}
+                {form.image && (
+                  <div className="mt-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
+                    <img src={form.image} className="w-full h-full object-cover" alt="preview"
+                      onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    <button type="button" onClick={() => setForm(f => ({ ...f, image: '' }))}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition">
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+                {uploading && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                    <div className="w-3 h-3 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
+                    Compressing & uploading...
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Excerpt</label>

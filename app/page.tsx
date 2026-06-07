@@ -3,7 +3,6 @@
 import CartDrawer from '@/components/cart-drawer';
 import ProductCard from '@/components/product-card';
 import BannerSlider from '@/components/banner-slider';
-import { Shield, TrendingUp, Leaf } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Merriweather } from 'next/font/google';
 
@@ -65,6 +64,7 @@ function CertificationCarousel() {
                 <img
                   src={certifications[currentIndex].image}
                   alt={certifications[currentIndex].name}
+                  loading="lazy"
                   className="h-20 mx-auto mb-3 object-contain transition-opacity duration-300"
                 />
                 <p className="text-sm font-semibold text-gray-900">{certifications[currentIndex].name}</p>
@@ -97,6 +97,7 @@ function CertificationCarousel() {
                     <img
                       src={cert.image}
                       alt={cert.name}
+                      loading="lazy"
                       className="h-16 mx-auto object-contain"
                     />
                   </div>
@@ -104,7 +105,7 @@ function CertificationCarousel() {
                   <p className="text-xs text-gray-600">{cert.description}</p>
                 </div>
               ))}
-              {/* Duplicate set for seamless loop */}
+              {/* Second set for seamless loop */}
               {certifications.map((cert, index) => (
                 <div key={`second-${index}`} className="flex-shrink-0 text-center">
                   <div className="bg-gray-50 rounded-lg p-6 mb-3 hover:bg-green-50 transition-colors">
@@ -460,18 +461,20 @@ function CustomerReviewsCarousel() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'Sweeteners' | 'Combo Deals'>('Sweeteners');
+  const [mounted, setMounted] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setAllProducts(p); });
-    if (typeof window === 'undefined') return;
+    setMounted(true);
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
-    if (tab === 'combo') setActiveCategory('Combo Deals');
+    if (params.get('tab') === 'combo') setActiveCategory('Combo Deals');
+    fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
+      if (products) setAllProducts(products);
+    });
   }, []);
 
-  const sweeteners = allProducts.filter((p) => p.category === 'Sweeteners');
-  const combos = allProducts.filter((p) => p.category === 'Combo Deals');
+  const sweeteners = allProducts.filter((p: any) => p.category === 'Sweeteners');
+  const combos = allProducts.filter((p: any) => p.category === 'Combo Deals');
   const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : combos;
 
   return (
@@ -593,8 +596,11 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayProducts.map((product) => (
+            {mounted && displayProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
+            ))}
+            {!mounted && [1,2,3].map(i => (
+              <div key={i} className="bg-gray-100 rounded-lg aspect-square animate-pulse" />
             ))}
           </div>
         </div>

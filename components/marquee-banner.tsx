@@ -1,6 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 export default function MarqueeBanner() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <div style={{ background: '#1e4a2a', height: '37px' }} />;
+
   return (
     <div className="marquee-wrap">
       <div className="marquee-track">

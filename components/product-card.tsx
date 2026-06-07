@@ -21,13 +21,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link href={`/product/${product.id}`} className="block">
         <div className="relative w-full aspect-square bg-gray-100 overflow-hidden group">
           {product.image ? (
-            <img src={product.image} alt={product.name}
+            <img src={product.image} alt={product.name} loading="lazy"
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${product.images.length > 1 ? 'group-hover:opacity-0' : ''}`} />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-5xl">🌿</div>
           )}
           {product.images[1] && (
-            <img src={product.images[1]} alt={`${product.name} back`}
+            <img src={product.images[1]} alt={`${product.name} back`} loading="lazy"
               className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           )}
 

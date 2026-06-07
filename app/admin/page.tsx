@@ -1,20 +1,22 @@
 'use client';
 
-import { useAdminStore } from '@/lib/admin-store';
 import { Package, FileText, Tag, ShoppingBag, TrendingUp, AlertCircle, Users, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-  const { orders, users } = useAdminStore();
   const [products, setProducts] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
     fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
     fetch('/api/coupons-get').then(r => r.json()).then(({ coupons: c }) => { if (c) setCoupons(c); });
+    fetch('/api/orders-get').then(r => r.json()).then(({ orders: o }) => { if (o) setOrders(o); });
+    fetch('/api/users-get').then(r => r.json()).then(({ users: u }) => { if (u) setUsers(u); });
   }, []);
 
   const revenue = orders.reduce((sum, o) => sum + o.total, 0);
