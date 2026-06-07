@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AdminProduct } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
+import { uploadImage } from '@/lib/upload';
 
 const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
   name: '', description: '', category: 'Sweeteners', image: '', images: [],
@@ -33,24 +34,14 @@ export default function AdminProductsPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
-    const { url } = await res.json();
+    const url = await uploadImage(file);
     if (url) setForm(f => ({ ...f, image: url, images: [url, ...f.images.slice(1)] }));
   };
 
   const handleMultiFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const urls: string[] = [];
-    for (const file of files) {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
-      const { url } = await res.json();
-      if (url) urls.push(url);
-    }
+    const urls = await Promise.all(files.map(uploadImage));
     if (urls.length) setForm(f => ({ ...f, image: urls[0], images: urls }));
   };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BlogPost } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Eye, EyeOff, Upload } from 'lucide-react';
+import { uploadImage } from '@/lib/upload';
 
 const EMPTY: Omit<BlogPost, 'id' | 'createdAt'> = {
   title: '', slug: '', excerpt: '', content: '', image: '', author: 'AMVI Organics Team', published: true,
@@ -25,10 +26,7 @@ export default function AdminBlogsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
-    const { url } = await res.json();
+    const url = await uploadImage(file);
     if (url) setForm(f => ({ ...f, image: url }));
     setUploading(false);
   };
