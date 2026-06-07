@@ -282,6 +282,9 @@ export const useAdminStore = create<AdminState>()(
       name: 'amvi-admin-store-v2',
       partialize: (state) => ({
         adminLoggedIn: state.adminLoggedIn,
+        products: state.products,
+        blogs: state.blogs,
+        coupons: state.coupons,
         orders: state.orders,
         reviews: state.reviews,
         users: state.users,

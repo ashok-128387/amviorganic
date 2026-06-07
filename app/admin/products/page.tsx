@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { AdminProduct } from '@/lib/admin-store';
-import { mockProducts } from '@/lib/mock-data';
+import { useState, useRef } from 'react';
+import { useAdminStore, AdminProduct } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
 
 const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
@@ -12,7 +11,7 @@ const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
 };
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
@@ -20,17 +19,10 @@ export default function AdminProductsPage() {
   const [imgTab, setImgTab] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: dbProducts }) => {
-      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
-      else setProducts(mockProducts as AdminProduct[]);
-    }).catch(() => setProducts(mockProducts as AdminProduct[]));
-  }, []);
-
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
   const openEdit = (p: AdminProduct) => {
     setForm({ name: p.name, description: p.description, category: p.category, image: p.image, images: p.images, rating: p.rating, reviewCount: p.reviewCount, variations: p.variations });
-    setEditId(p.id); setImgTab(p.image?.startsWith('data:') || p.image?.startsWith('blob:') ? 'upload' : 'url');
+    setEditId(p.id); setImgTab(p.image?.startsWith('data:') ? 'upload' : 'url');
     setShowForm(true);
   };
 
@@ -48,12 +40,11 @@ export default function AdminProductsPage() {
   const handleMultiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const readers = files.map(file => new Promise<string>(resolve => {
+    Promise.all(files.map(file => new Promise<string>(resolve => {
       const r = new FileReader();
       r.onload = ev => resolve(ev.target?.result as string);
       r.readAsDataURL(file);
-    }));
-    Promise.all(readers).then(results => {
+    }))).then(results => {
       setForm(f => ({ ...f, image: results[0] || f.image, images: results }));
     });
   };
@@ -62,15 +53,13 @@ export default function AdminProductsPage() {
     if (!form.name.trim()) return;
     const id = editId ?? `p-${Date.now()}`;
     const product: AdminProduct = {
-      ...form,
-      id,
+      ...form, id,
       image: form.image || '',
       variations: form.variations.map((v, i) => ({ ...v, id: v.id || `v-${id}-${i}`, productId: id })),
       createdAt: new Date(),
     };
-    if (editId) setProducts(ps => ps.map(p => p.id === editId ? product : p));
-    else setProducts(ps => [...ps, product]);
-    fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: product.createdAt.toISOString() }) });
+    if (editId) updateProduct(editId, product);
+    else addProduct(product);
     setShowForm(false);
   };
 
@@ -97,7 +86,6 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      {/* Products Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -136,18 +124,18 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-blue-50 transition" title="Edit">
+                      <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-blue-50 transition">
                         <Pencil size={15} className="text-blue-500" />
                       </button>
                       {deleteConfirm === p.id ? (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { const pid = p.id; setProducts(ps => ps.filter(x => x.id !== pid)); setDeleteConfirm(null); fetch('/api/product-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid }) }); }}
+                          <button onClick={() => { deleteProduct(p.id); setDeleteConfirm(null); }}
                             className="p-1.5 rounded-lg hover:bg-red-50 transition"><Check size={15} className="text-red-500" /></button>
                           <button onClick={() => setDeleteConfirm(null)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 transition"><X size={15} className="text-gray-400" /></button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition" title="Delete">
+                        <button onClick={() => setDeleteConfirm(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition">
                           <Trash2 size={15} className="text-red-400" />
                         </button>
                       )}
@@ -160,7 +148,6 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl my-8">
@@ -168,18 +155,13 @@ export default function AdminProductsPage() {
               <p className="font-bold text-gray-900">{editId ? 'Edit Product' : 'Add Product'}</p>
               <button onClick={() => setShowForm(false)}><X size={20} className="text-gray-400" /></button>
             </div>
-
             <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[72vh]">
-
-              {/* Name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Product Name *</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
                   placeholder="e.g. Jaggery Cubes" />
               </div>
-
-              {/* Category */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
                 <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
@@ -188,11 +170,8 @@ export default function AdminProductsPage() {
                   <option>Combo Deals</option>
                 </select>
               </div>
-
-              {/* Image — Upload or URL tabs */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-2">Product Image</label>
-                {/* Tab switcher */}
                 <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-3 w-fit">
                   {(['upload', 'url'] as const).map(tab => (
                     <button key={tab} onClick={() => setImgTab(tab)}
@@ -202,40 +181,27 @@ export default function AdminProductsPage() {
                     </button>
                   ))}
                 </div>
-
                 {imgTab === 'upload' ? (
                   <div>
-                    {/* Drop zone */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer transition hover:border-green-600 hover:bg-green-50"
-                    >
+                    <div onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-green-600 hover:bg-green-50 transition">
                       {form.image ? (
                         <div className="flex flex-col items-center gap-2">
                           <img src={form.image} className="h-24 rounded-lg object-contain mx-auto" alt="preview" />
-                          <p className="text-xs text-gray-500">Click to change image</p>
+                          <p className="text-xs text-gray-500">Click to change</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2 py-2">
                           <Upload size={28} className="text-gray-300" />
-                          <p className="text-sm font-semibold text-gray-600">Click to upload image</p>
-                          <p className="text-xs text-gray-400">PNG, JPG, WEBP — from your laptop</p>
+                          <p className="text-sm font-semibold text-gray-600">Click to upload</p>
+                          <p className="text-xs text-gray-400">PNG, JPG, WEBP</p>
                         </div>
                       )}
                     </div>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-
-                    {/* Multiple images */}
                     <div className="mt-3">
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Additional Images (optional)</label>
                       <input type="file" accept="image/*" multiple className="text-xs text-gray-500 w-full" onChange={handleMultiFileChange} />
-                      {form.images.length > 1 && (
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          {form.images.slice(1).map((img, i) => (
-                            <img key={i} src={img} className="h-12 w-12 rounded-lg object-cover border border-gray-100" alt={`extra-${i}`} />
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -250,16 +216,12 @@ export default function AdminProductsPage() {
                   </div>
                 )}
               </div>
-
-              {/* Description */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 resize-none"
                   placeholder="Product description..." />
               </div>
-
-              {/* Variations */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-gray-600">Variations (Size / Price / Stock)</label>
@@ -286,14 +248,10 @@ export default function AdminProductsPage() {
                   ))}
                 </div>
               </div>
-
             </div>
-
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
               <button onClick={() => setShowForm(false)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
-                Cancel
-              </button>
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Cancel</button>
               <button onClick={handleSave}
                 className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition"
                 style={{ background: '#1e4a2a' }}
