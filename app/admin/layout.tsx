@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [hydrated, adminLoggedIn, pathname]);
 
   if (pathname === '/admin/login') return <>{children}</>;
-  if (!hydrated) return null;
+  if (!hydrated) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400 text-sm">Loading...</p></div>;
   if (!adminLoggedIn) return null;
 
   const Sidebar = (

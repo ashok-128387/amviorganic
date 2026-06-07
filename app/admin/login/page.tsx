@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const ok = adminLogin(password);
-    if (ok) window.location.href = '/admin';
+    if (ok) setTimeout(() => { window.location.href = '/admin'; }, 100);
     else setError('Incorrect password. Try again.');
   };
 
