@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAdminStore, Coupon } from '@/lib/admin-store';
+import { Coupon } from '@/lib/admin-store';
 import { Plus, X, Trash2, Pencil } from 'lucide-react';
 
 const EMPTY: Omit<Coupon, 'id' | 'usedCount'> = {
@@ -11,7 +11,7 @@ const EMPTY: Omit<Coupon, 'id' | 'usedCount'> = {
 };
 
 export default function AdminCouponsPage() {
-  const { coupons, addCoupon, updateCoupon, deleteCoupon } = useAdminStore();
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
@@ -19,12 +19,7 @@ export default function AdminCouponsPage() {
 
   useEffect(() => {
     fetch('/api/coupons-get').then(r => r.json()).then(({ coupons: dbCoupons }) => {
-      if (!dbCoupons?.length) return;
-      const existing = useAdminStore.getState().coupons.map(c => c.id);
-      dbCoupons.forEach((c: any) => {
-        if (!existing.includes(c.id)) addCoupon(c);
-        else updateCoupon(c.id, c);
-      });
+      if (dbCoupons) setCoupons(dbCoupons);
     });
   }, []);
 
@@ -43,8 +38,8 @@ export default function AdminCouponsPage() {
       usedCount: editId ? (coupons.find(c => c.id === editId)?.usedCount ?? 0) : 0,
       expiresAt: new Date(form.expiresAt).toISOString(),
     };
-    if (editId) updateCoupon(editId, coupon);
-    else addCoupon(coupon);
+    if (editId) setCoupons(cs => cs.map(c => c.id === editId ? coupon : c));
+    else setCoupons(cs => [...cs, coupon]);
     fetch('/api/coupon-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(coupon) });
     setShowForm(false);
   };
@@ -94,7 +89,7 @@ export default function AdminCouponsPage() {
                       <span className={expired ? 'text-red-400' : ''}>{new Date(c.expiresAt).toLocaleDateString('en-IN')}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <button onClick={() => { const updated = { ...c, active: !c.active }; updateCoupon(c.id, updated); fetch('/api/coupon-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }); }}
+                      <button onClick={() => { const updated = { ...c, active: !c.active }; setCoupons(cs => cs.map(x => x.id === c.id ? updated : x)); fetch('/api/coupon-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }); }}
                         className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition"
                         style={{ background: (c.active && !expired) ? '#1e4a2a18' : '#f3f4f6', color: (c.active && !expired) ? '#1e4a2a' : '#9ca3af' }}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: (c.active && !expired) ? '#1e4a2a' : '#9ca3af' }} />
@@ -108,7 +103,7 @@ export default function AdminCouponsPage() {
                         </button>
                         {deleteConfirm === c.id ? (
                           <div className="flex gap-1">
-                            <button onClick={() => { deleteCoupon(c.id); setDeleteConfirm(null); fetch('/api/coupon-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) }); }}
+                            <button onClick={() => { const cid = c.id; setCoupons(cs => cs.filter(x => x.id !== cid)); setDeleteConfirm(null); fetch('/api/coupon-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: cid }) }); }}
                               className="px-2 py-1 text-xs rounded bg-red-50 text-red-500 hover:bg-red-100">Yes</button>
                             <button onClick={() => setDeleteConfirm(null)}
                               className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-500 hover:bg-gray-200">No</button>

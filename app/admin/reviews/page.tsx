@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminStore, ProductReview } from '@/lib/admin-store';
 import { Trash2, Check, Star, Plus, X, Save, Edit2 } from 'lucide-react';
 
@@ -9,7 +9,12 @@ const FILTERS = ['all', 'pending', 'approved'] as const;
 const EMPTY_FORM = { customerName: '', email: '', productName: '', rating: 5, title: '', comment: '' };
 
 export default function AdminReviewsPage() {
-  const { reviews, products, approveReview, deleteReview, addReview, updateReview } = useAdminStore();
+  const { reviews, approveReview, deleteReview, addReview, updateReview } = useAdminStore();
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+  }, []);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useAdminStore } from '@/lib/admin-store';
+import { useState, useMemo, useEffect } from 'react';
 import ProductCard from '@/components/product-card';
 import CartDrawer from '@/components/cart-drawer';
 import ProductsSidebar, { FilterState } from '@/components/products-sidebar';
@@ -10,18 +9,22 @@ const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals'];
 const PRICE_MAX = 1000;
 
 export default function AllProductsPage() {
-  const { products } = useAdminStore();
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [filters, setFilters] = useState<FilterState>({ categories: ALL_CATEGORIES, maxPrice: PRICE_MAX, sort: 'default' });
 
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setAllProducts(p); });
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = products.filter((p) => filters.categories.includes(p.category));
+    let list = allProducts.filter((p) => filters.categories.includes(p.category));
     list = list.filter((p) => Math.min(...p.variations.map((v) => v.price)) <= filters.maxPrice);
     if (filters.sort === 'price-asc') list = [...list].sort((a, b) => Math.min(...a.variations.map(v => v.price)) - Math.min(...b.variations.map(v => v.price)));
     if (filters.sort === 'price-desc') list = [...list].sort((a, b) => Math.min(...b.variations.map(v => v.price)) - Math.min(...a.variations.map(v => v.price)));
     if (filters.sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
     if (filters.sort === 'popular') list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
     return list;
-  }, [filters, products]);
+  }, [filters, allProducts]);
 
   return (
     <>

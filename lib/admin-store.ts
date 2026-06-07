@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { mockProducts, Product } from './mock-data';
+import { Product } from './mock-data';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -155,6 +155,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
+      // ── Products / Blogs / Coupons are NOT persisted — loaded fresh from DB ──
       // ── Auth ──
       adminLoggedIn: false,
       adminLogin: (password) => {
@@ -164,7 +165,7 @@ export const useAdminStore = create<AdminState>()(
       adminLogout: () => set({ adminLoggedIn: false }),
 
       // ── Products ──
-      products: mockProducts.map((p) => ({ ...p, createdAt: new Date(p.createdAt) })),
+      products: [],
       addProduct: (p) => set((s) => ({ products: [...s.products, p] })),
       updateProduct: (id, p) =>
         set((s) => ({ products: s.products.map((x) => (x.id === id ? { ...x, ...p } : x)) })),
@@ -172,30 +173,7 @@ export const useAdminStore = create<AdminState>()(
         set((s) => ({ products: s.products.filter((x) => x.id !== id) })),
 
       // ── Blogs ──
-      blogs: [
-        {
-          id: 'b1',
-          title: 'Why Organic Jaggery is Better Than Refined Sugar',
-          slug: 'organic-jaggery-vs-refined-sugar',
-          excerpt: 'Discover the health benefits of switching from refined sugar to organic jaggery and how it can transform your wellness journey.',
-          content: `Jaggery, known as "Gur" in Hindi, has been used in Indian households for centuries. Unlike refined sugar, organic jaggery retains all the natural minerals and vitamins present in sugarcane juice.\n\n## Key Benefits\n\n- **Rich in Iron**: Helps prevent anemia\n- **Aids Digestion**: Acts as a digestive agent\n- **Boosts Immunity**: Contains antioxidants\n- **Cleanses the Liver**: Detoxifies the body naturally\n\nAt AMVI Organics, our jaggery is sourced directly from certified organic farms in Mandya, Karnataka — processed without any chemicals or artificial additives.`,
-          image: '/Shoot Product only/Jaggery Cubes Front Pouch.png',
-          author: 'AMVI Organics Team',
-          published: true,
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: 'b2',
-          title: '5 Ways to Use Liquid Jaggery in Your Daily Diet',
-          slug: 'ways-to-use-liquid-jaggery',
-          excerpt: 'Liquid jaggery is a versatile sweetener. Here are 5 delicious and healthy ways to incorporate it into your everyday meals.',
-          content: `Liquid jaggery from AMVI Organics is a pure, chemical-free sweetener that can replace sugar and honey in virtually any recipe.\n\n## 5 Easy Ways\n\n1. **Morning Tea/Coffee** — Add 1 tsp instead of sugar\n2. **Smoothies** — Blend with fruits for a natural sweet boost\n3. **Pancakes & Waffles** — Use as a drizzle topping\n4. **Salad Dressings** — Mix with lemon juice and olive oil\n5. **Baking** — Replace white sugar 1:1 in most recipes\n\nLiquid jaggery dissolves instantly, making it the most convenient form of jaggery for daily use.`,
-          image: '/Shoot Product only/Liquid Jaggery front.png',
-          author: 'AMVI Organics Team',
-          published: true,
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ],
+      blogs: [],
       addBlog: (b) => set((s) => ({ blogs: [...s.blogs, b] })),
       updateBlog: (id, b) =>
         set((s) => ({ blogs: s.blogs.map((x) => (x.id === id ? { ...x, ...b } : x)) })),
@@ -203,18 +181,7 @@ export const useAdminStore = create<AdminState>()(
         set((s) => ({ blogs: s.blogs.filter((x) => x.id !== id) })),
 
       // ── Coupons ──
-      coupons: [
-        {
-          id: 'cp1', code: 'AMVI10', type: 'percent', value: 10, minOrder: 300,
-          maxUses: 100, usedCount: 12, active: true,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: 'cp2', code: 'FLAT50', type: 'flat', value: 50, minOrder: 500,
-          maxUses: 50, usedCount: 5, active: true,
-          expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ],
+      coupons: [],
       addCoupon: (c) => set((s) => ({ coupons: [...s.coupons, c] })),
       updateCoupon: (id, c) =>
         set((s) => ({ coupons: s.coupons.map((x) => (x.id === id ? { ...x, ...c } : x)) })),
@@ -320,6 +287,16 @@ export const useAdminStore = create<AdminState>()(
         return true;
       },
     }),
-    { name: 'amvi-admin-store' }
+    {
+      name: 'amvi-admin-store',
+      partialize: (state) => ({
+        adminLoggedIn: state.adminLoggedIn,
+        orders: state.orders,
+        reviews: state.reviews,
+        users: state.users,
+        siteSettings: state.siteSettings,
+        otpStore: state.otpStore,
+      }),
+    }
   )
 );

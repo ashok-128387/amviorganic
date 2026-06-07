@@ -1,12 +1,19 @@
 'use client';
 
-import { useAdminStore } from '@/lib/admin-store';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CartDrawer from '@/components/cart-drawer';
 
 export default function BlogPage() {
-  const { blogs } = useAdminStore();
-  const published = blogs.filter(b => b.published);
+  const [blogs, setBlogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => {
+      if (b) setBlogs(b.filter((x: any) => x.published));
+    });
+  }, []);
+
+  const published = blogs;
 
   return (
     <>

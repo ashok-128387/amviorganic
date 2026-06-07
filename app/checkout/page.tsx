@@ -1,7 +1,6 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { useAdminStore } from '@/lib/admin-store';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle } from 'lucide-react';
@@ -14,7 +13,14 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart, isLoggedIn, user, addOrder } = useStore();
-  const { products, validateCoupon } = useAdminStore();
+
+  const [products, setProducts] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    fetch('/api/coupons-get').then(r => r.json()).then(({ coupons: c }) => { if (c) setCoupons(c); });
+  }, []);
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
@@ -61,14 +67,15 @@ export default function CheckoutPage() {
   const handleApplyCoupon = () => {
     setCouponError('');
     if (!couponInput.trim()) return;
-    const result = validateCoupon(couponInput.trim(), cartTotal);
-    if (result.valid) {
-      setAppliedCoupon({ code: couponInput.toUpperCase(), discount: result.discount, message: result.message });
-      setCouponInput('');
-    } else {
-      setCouponError(result.message);
-      setAppliedCoupon(null);
-    }
+    const coupon = coupons.find((c: any) => c.code.toUpperCase() === couponInput.trim().toUpperCase());
+    if (!coupon) { setCouponError('Invalid coupon code'); setAppliedCoupon(null); return; }
+    if (!coupon.active) { setCouponError('Coupon is inactive'); setAppliedCoupon(null); return; }
+    if (new Date(coupon.expiresAt) < new Date()) { setCouponError('Coupon has expired'); setAppliedCoupon(null); return; }
+    if (coupon.usedCount >= coupon.maxUses) { setCouponError('Coupon usage limit reached'); setAppliedCoupon(null); return; }
+    if (cartTotal < coupon.minOrder) { setCouponError(`Minimum order ₹${coupon.minOrder} required`); setAppliedCoupon(null); return; }
+    const discount = coupon.type === 'percent' ? Math.round((cartTotal * coupon.value) / 100) : coupon.value;
+    setAppliedCoupon({ code: coupon.code, discount, message: `Coupon applied! You save ₹${discount}` });
+    setCouponInput('');
   };
 
   const handleRemoveCoupon = () => {
