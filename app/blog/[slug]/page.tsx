@@ -1,14 +1,27 @@
 'use client';
 
-import { useAdminStore } from '@/lib/admin-store';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CartDrawer from '@/components/cart-drawer';
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { blogs } = useAdminStore();
-  const post = blogs.find((b) => b.slug === slug && b.published) ?? null;
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs }) => {
+      if (blogs) setPost(blogs.find((b: any) => b.slug === slug && b.published) ?? null);
+      setLoading(false);
+    });
+  }, [slug]);
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-400 text-sm">Loading...</p>
+    </div>
+  );
 
   if (!post) return (
     <div className="min-h-screen flex items-center justify-center text-center">
@@ -19,7 +32,6 @@ export default function BlogPostPage() {
     </div>
   );
 
-  // Simple markdown-like renderer
   const renderContent = (content: string) =>
     content.split('\n').map((line, i) => {
       if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-bold mt-6 mb-3" style={{ color: '#1e4a2a' }}>{line.slice(3)}</h2>;

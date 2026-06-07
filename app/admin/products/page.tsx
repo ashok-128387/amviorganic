@@ -30,27 +30,28 @@ export default function AdminProductsPage() {
     setShowForm(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setForm(f => ({ ...f, image: result, images: [result, ...f.images.slice(1)] }));
-    };
-    reader.readAsDataURL(file);
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
+    const { url } = await res.json();
+    if (url) setForm(f => ({ ...f, image: url, images: [url, ...f.images.slice(1)] }));
   };
 
-  const handleMultiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultiFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    Promise.all(files.map(file => new Promise<string>(resolve => {
-      const r = new FileReader();
-      r.onload = ev => resolve(ev.target?.result as string);
-      r.readAsDataURL(file);
-    }))).then(results => {
-      setForm(f => ({ ...f, image: results[0] || f.image, images: results }));
-    });
+    const urls: string[] = [];
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
+      const { url } = await res.json();
+      if (url) urls.push(url);
+    }
+    if (urls.length) setForm(f => ({ ...f, image: urls[0], images: urls }));
   };
 
   const handleSave = async () => {

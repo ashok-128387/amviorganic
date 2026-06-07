@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BlogPost } from '@/lib/admin-store';
-import { Pencil, Trash2, Plus, X, Eye, EyeOff } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Eye, EyeOff, Upload } from 'lucide-react';
 
 const EMPTY: Omit<BlogPost, 'id' | 'createdAt'> = {
   title: '', slug: '', excerpt: '', content: '', image: '', author: 'AMVI Organics Team', published: true,
@@ -18,6 +18,20 @@ export default function AdminBlogsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
+    const { url } = await res.json();
+    if (url) setForm(f => ({ ...f, image: url }));
+    setUploading(false);
+  };
 
   useEffect(() => {
     fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
@@ -124,10 +138,19 @@ export default function AdminBlogsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Cover Image URL</label>
-                <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
-                  placeholder="/Shoot Product only/image.png" />
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Cover Image</label>
+                <div className="flex gap-2 items-center">
+                  <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
+                    placeholder="/uploads/image.png or paste URL" />
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold text-white transition flex-shrink-0"
+                    style={{ background: '#1e4a2a' }}>
+                    <Upload size={13} /> {uploading ? 'Uploading...' : 'Upload'}
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </div>
+                {form.image && <img src={form.image} className="mt-2 h-20 rounded-lg object-cover border border-gray-100" onError={e => (e.currentTarget.style.display = 'none')} alt="preview" />}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Excerpt</label>
