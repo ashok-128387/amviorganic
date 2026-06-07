@@ -5,8 +5,9 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Package, Truck, Mail, Home } from 'lucide-react';
+import { Suspense } from 'react';
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const { user, orders } = useStore();
@@ -234,5 +235,13 @@ export default function OrderConfirmationPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Loading order...</p></div>}>
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }
