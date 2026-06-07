@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const ok = adminLogin(password);
-    if (ok) router.replace('/admin');
+    if (ok) window.location.href = '/admin';
     else setError('Incorrect password. Try again.');
   };
 
