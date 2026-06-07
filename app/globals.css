@@ -125,6 +125,21 @@
   }
 }
 
+/* Prevent FOUC */
+html {
+  background: #fff;
+}
+
+/* Skeleton shimmer for images loading */
+img:not([src]) {
+  visibility: hidden;
+}
+
+/* Ensure fonts don't cause layout shift */
+* {
+  font-display: optional;
+}
+
 /* Banner: cap height on laptop/desktop only */
 @media (min-width: 1024px) {
   [data-banner] {

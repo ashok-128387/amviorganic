@@ -6,6 +6,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  compress: true,
+  poweredByHeader: false,
+  experimental: {
+    optimizeCss: true,
+  },
 }
 
 export default nextConfig
