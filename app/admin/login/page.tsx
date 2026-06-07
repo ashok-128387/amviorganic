@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAdminStore } from '@/lib/admin-store';
 
 export default function AdminLoginPage() {
-  const { adminLogin } = useAdminStore();
+  const adminLogin = useAdminStore((s) => s.adminLogin);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
