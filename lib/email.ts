@@ -27,25 +27,20 @@ export interface OrderEmailData {
 
 // ── Core sender ───────────────────────────────────────────────────────────────
 async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  // TODO: Uncomment when RESEND_API_KEY is set
-  // const res = await fetch('https://api.resend.com/emails', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-  //     'Content-Type': 'application/json',
-  //   },
-  //   body: JSON.stringify({
-  //     from: 'AMVI Organics <orders@amviorganics.com>',
-  //     to,
-  //     subject,
-  //     html,
-  //   }),
-  // });
-  // return res.json();
-
-  // DEV: log to console until API key is set
-  console.log(`[EMAIL] To: ${to} | Subject: ${subject}`);
-  return { id: 'mock-email-id' };
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'AMVI Organics <orders@amviorganics.com>',
+      to,
+      subject,
+      html,
+    }),
+  });
+  return res.json();
 }
 
 // ── 1. OTP Login Email ────────────────────────────────────────────────────────
