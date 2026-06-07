@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Montserrat } from 'next/font/google'
 import './globals.css'
@@ -55,7 +54,7 @@ export default function RootLayout({
         <CartDrawer />
         <main>{children}</main>
         <Footer />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+
       </body>
     </html>
   )
