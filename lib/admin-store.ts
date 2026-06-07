@@ -279,7 +279,7 @@ export const useAdminStore = create<AdminState>()(
       },
     }),
     {
-      name: 'amvi-admin-store',
+      name: 'amvi-admin-store-v2',
       partialize: (state) => ({
         adminLoggedIn: state.adminLoggedIn,
         orders: state.orders,
