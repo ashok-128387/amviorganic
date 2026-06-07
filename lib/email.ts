@@ -1,13 +1,10 @@
 // ─── Email Service ────────────────────────────────────────────────────────────
-// All emails are ready to send via Resend.
-// When you get the API key, set RESEND_API_KEY in .env.local
-// and uncomment the fetch call in sendEmail().
-//
 // Emails configured:
 //   1. OTP Login             → sendOtpEmail(email, otp)
 //   2. Welcome after signup  → sendWelcomeEmail(email, name)
 //   3. Order Confirmation    → sendOrderConfirmationEmail(order)
 //   4. Order Shipped         → sendOrderShippedEmail(order, trackingId)
+//   5. Contact Inquiry       → sendContactEmail(data)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface OrderEmailData {
@@ -169,6 +166,66 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
     </div>
   `;
   return sendEmail({ to: order.email, subject: `Order Confirmed ✅ #${order.orderId.slice(0,8).toUpperCase()} — AMVI Organics`, html });
+}
+
+// ── 5. Contact Inquiry Email ─────────────────────────────────────────────────
+export interface ContactEmailData {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  country?: string;
+  message: string;
+}
+
+export async function sendContactEmail(data: ContactEmailData) {
+  const { name, email, phone, company, address, city, pincode, country, message } = data;
+
+  const rows = [['Name', name], ['Email', email], ['Phone', phone || '-'], ['Company', company || '-'], ['Address', address || '-'], ['City', city || '-'], ['Pincode', pincode || '-'], ['Country', country || 'India']];
+  const tableHtml = rows.map(([k, v]) => `
+    <tr>
+      <td style="padding:8px 0;font-size:12px;font-weight:700;color:#888;width:100px;vertical-align:top">${k}</td>
+      <td style="padding:8px 0;font-size:13px;color:#333">${v}</td>
+    </tr>`).join('');
+
+  const adminHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #f0ece6">
+      <div style="background:linear-gradient(135deg,#1e4a2a,#2a6b3e);padding:24px 32px">
+        <p style="font-size:20px;font-weight:800;color:#e8b84b;margin:0">AMVI Organics</p>
+        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin:4px 0 0">New Contact Form Inquiry</p>
+      </div>
+      <div style="padding:28px 32px">
+        <table style="width:100%;border-collapse:collapse">${tableHtml}</table>
+        <div style="margin-top:20px;padding:16px;background:#f5f2ed;border-radius:10px">
+          <p style="font-size:12px;font-weight:700;color:#888;margin:0 0 8px">MESSAGE</p>
+          <p style="font-size:14px;color:#333;line-height:1.7;margin:0">${message}</p>
+        </div>
+      </div>
+      <div style="background:#f5f2ed;padding:14px;text-align:center">
+        <p style="color:#bbb;font-size:11px;margin:0">© 2024 AMVI Organics</p>
+      </div>
+    </div>`;
+
+  const customerHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #f0ece6">
+      <div style="background:linear-gradient(135deg,#1e4a2a,#2a6b3e);padding:24px 32px;text-align:center">
+        <p style="font-size:20px;font-weight:800;color:#e8b84b;margin:0">AMVI Organics</p>
+      </div>
+      <div style="padding:28px 32px">
+        <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 12px">Hi ${name}, we got your message! 👋</h2>
+        <p style="font-size:14px;color:#555;line-height:1.7;margin:0 0 20px">Thank you for reaching out. Our team will get back to you within <strong>24 hours</strong>.</p>
+        <p style="font-size:13px;color:#888;margin:0">Need urgent help? Call us at <strong>+91-8748899100</strong></p>
+      </div>
+      <div style="background:#f5f2ed;padding:14px;text-align:center">
+        <p style="color:#bbb;font-size:11px;margin:0">© 2024 AMVI Organics · Bengaluru, India</p>
+      </div>
+    </div>`;
+
+  await sendEmail({ to: 'contact@amviorganics.com', subject: `New Inquiry from ${name}`, html: adminHtml });
+  await sendEmail({ to: email, subject: 'We received your inquiry — AMVI Organics', html: customerHtml });
 }
 
 // ── 4. Order Shipped Email ────────────────────────────────────────────────────

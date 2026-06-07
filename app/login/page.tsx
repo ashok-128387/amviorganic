@@ -2,7 +2,7 @@
 
 import { useStore } from '@/lib/store';
 import { useAdminStore } from '@/lib/admin-store';
-import { sendOtpEmail, sendWelcomeEmail } from '@/lib/email';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, ArrowRight, RefreshCw, CheckCircle } from 'lucide-react';
@@ -45,9 +45,7 @@ export default function LoginPage() {
     setError('');
     try {
       const generatedOtp = generateOtp(email);
-      await sendOtpEmail(email, generatedOtp);
-      // DEV: show OTP in console since Resend not connected yet
-      console.log(`[DEV OTP for ${email}]: ${generatedOtp}`);
+      await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: generatedOtp }) });
       setStep('otp');
       setResendTimer(60);
     } catch {
@@ -116,7 +114,7 @@ export default function LoginPage() {
     const storedUsers = JSON.parse(localStorage.getItem('amvi-users') || '{}');
     storedUsers[email] = { id, name };
     localStorage.setItem('amvi-users', JSON.stringify(storedUsers));
-    await sendWelcomeEmail(email, name);
+    await fetch('/api/send-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name }) });
     addRegisteredUser({ id, name, email, registeredAt: new Date().toISOString() });
     setUser({ id, email, name, password: '', createdAt: new Date() });
     setLoading(false);
@@ -127,8 +125,7 @@ export default function LoginPage() {
     if (resendTimer > 0) return;
     setLoading(true);
     const generatedOtp = generateOtp(email);
-    await sendOtpEmail(email, generatedOtp);
-    console.log(`[DEV OTP for ${email}]: ${generatedOtp}`);
+    await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: generatedOtp }) });
     setOtpDigits(['', '', '', '', '', '']);
     setResendTimer(60);
     setError('');
@@ -226,10 +223,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* DEV hint */}
-              <p className="text-center text-xs text-gray-400 mt-4">
-                📌 Dev mode: Check browser console for OTP
-              </p>
+
             </>
           )}
 

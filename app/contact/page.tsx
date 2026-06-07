@@ -15,6 +15,26 @@ const montserrat = Montserrat({
 
 export default function ContactPage() {
   const [activeTab, setActiveTab] = useState('home');
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', address: '', city: '', pincode: '', country: 'India', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) { setError('Name, email and message are required.'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch('/api/send-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      if (res.ok) { setSuccess(true); setForm({ name: '', email: '', phone: '', company: '', address: '', city: '', pincode: '', country: 'India', message: '' }); }
+      else setError('Failed to send. Please try again.');
+    } catch { setError('Failed to send. Please try again.'); }
+    finally { setLoading(false); }
+  };
 
   return (
     <>
@@ -45,16 +65,19 @@ export default function ContactPage() {
           {/* RIGHT: Form */}
           <div className="mko-form-card">
             <h2 className={`mko-form-title ${playfair.className}`}>Inquiries</h2>
+            {success && <div style={{background:'#f0faf2',border:'1px solid #16a34a',borderRadius:8,padding:'12px 16px',marginBottom:16,color:'#16a34a',fontSize:'0.88rem',fontWeight:600}}>✅ Message sent! We'll get back to you within 24 hours.</div>}
+            {error && <div style={{background:'#fef2f2',border:'1px solid #ef4444',borderRadius:8,padding:'12px 16px',marginBottom:16,color:'#ef4444',fontSize:'0.88rem'}}>{error}</div>}
+            <form onSubmit={handleSubmit}>
 
             {/* Name + Email */}
             <div className="mko-field-row mko-col-2">
               <div className="mko-field">
                 <label className="mko-label">Name <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" placeholder="Your Name"/>
+                <input className="mko-input" type="text" name="name" value={form.name} onChange={handleChange} placeholder="Your Name"/>
               </div>
               <div className="mko-field">
                 <label className="mko-label">Email <span className="mko-req">*</span></label>
-                <input className="mko-input" type="email" placeholder="your@email.com"/>
+                <input className="mko-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com"/>
               </div>
             </div>
 
@@ -68,12 +91,12 @@ export default function ContactPage() {
                     <span>India (+91)</span>
                     <span className="mko-chevron">▾</span>
                   </div>
-                  <input className="mko-phone-input" type="tel" placeholder="98765 43210"/>
+                  <input className="mko-phone-input" type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="98765 43210"/>
                 </div>
               </div>
               <div className="mko-field">
                 <label className="mko-label">Company (Optional)</label>
-                <input className="mko-input" type="text" placeholder="Your Company Name"/>
+                <input className="mko-input" type="text" name="company" value={form.company} onChange={handleChange} placeholder="Your Company Name"/>
               </div>
             </div>
 
@@ -81,7 +104,7 @@ export default function ContactPage() {
             <div className="mko-field-row mko-col-1">
               <div className="mko-field">
                 <label className="mko-label">Address <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" placeholder="Street address, Flat No, Building"/>
+                <input className="mko-input" type="text" name="address" value={form.address} onChange={handleChange} placeholder="Street address, Flat No, Building"/>
               </div>
             </div>
 
@@ -89,15 +112,15 @@ export default function ContactPage() {
             <div className="mko-field-row mko-col-3">
               <div className="mko-field">
                 <label className="mko-label">City <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" placeholder="City"/>
+                <input className="mko-input" type="text" name="city" value={form.city} onChange={handleChange} placeholder="City"/>
               </div>
               <div className="mko-field">
                 <label className="mko-label">Pincode / ZIP <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" placeholder="560001"/>
+                <input className="mko-input" type="text" name="pincode" value={form.pincode} onChange={handleChange} placeholder="560001"/>
               </div>
               <div className="mko-field">
                 <label className="mko-label">Country <span className="mko-req">*</span></label>
-                <input className="mko-input" type="text" defaultValue="India"/>
+                <input className="mko-input" type="text" name="country" value={form.country} onChange={handleChange} defaultValue="India"/>
               </div>
             </div>
 
@@ -140,14 +163,14 @@ export default function ContactPage() {
             <div className="mko-field-row mko-col-1">
               <div className="mko-field">
                 <label className="mko-label">Message <span className="mko-req">*</span></label>
-                <textarea className="mko-textarea" placeholder="How can we help you?"></textarea>
+                <textarea className="mko-textarea" name="message" value={form.message} onChange={handleChange} placeholder="How can we help you?"></textarea>
               </div>
             </div>
 
             {/* Submit */}
-            <button className="mko-submit-btn">Submit Inquiry</button>
+            <button type="submit" className="mko-submit-btn" disabled={loading}>{loading ? 'Sending...' : 'Submit Inquiry'}</button>
 
-            {/* Note */}
+            </form>
             <p className="mko-form-note">
               The address will be secured with otp on platform for checkouts. View
               <a href="#">Terms and conditions</a> and <a href="#">privacy policy</a>.

@@ -2,7 +2,6 @@
 
 import { useStore } from '@/lib/store';
 import { useAdminStore } from '@/lib/admin-store';
-import { sendOrderConfirmationEmail } from '@/lib/email';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle } from 'lucide-react';
@@ -135,24 +134,28 @@ export default function CheckoutPage() {
             };
             addOrder(orderData);
             clearCart();
-            // Send order confirmation email
-            sendOrderConfirmationEmail({
-              orderId: orderData.id,
-              customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-              email: formData.email,
-              phone: formData.phone,
-              items: orderItems.map((item) => {
-                const product = products.find((p) => p.id === item.productId);
-                const variation = product?.variations.find((v) => v.id === item.variationId);
-                return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+            // Send order confirmation email via server API
+            fetch('/api/send-order-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: orderData.id,
+                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                email: formData.email,
+                phone: formData.phone,
+                items: orderItems.map((item) => {
+                  const product = products.find((p) => p.id === item.productId);
+                  const variation = product?.variations.find((v) => v.id === item.variationId);
+                  return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+                }),
+                subtotal: cartTotal,
+                discount,
+                shipping,
+                tax,
+                total,
+                shippingAddress: orderData.shippingAddress,
+                createdAt: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
               }),
-              subtotal: cartTotal,
-              discount,
-              shipping,
-              tax,
-              total,
-              shippingAddress: orderData.shippingAddress,
-              createdAt: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
             });
             router.push(`/order-confirmation?orderId=${orderData.id}`);
           },

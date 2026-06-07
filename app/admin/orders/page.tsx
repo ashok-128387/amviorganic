@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminStore, AdminOrder } from '@/lib/admin-store';
-import { sendOrderShippedEmail } from '@/lib/email';
+
 import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package } from 'lucide-react';
 
 const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
@@ -28,21 +28,27 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (order: AdminOrder, status: AdminOrder['status']) => {
     updateOrderStatus(order.id, status);
     if (status === 'shipped') {
-      const tracking = order.trackingId ?? '';
-      sendOrderShippedEmail({
-        orderId: order.id,
-        customerName: order.customerName,
-        email: order.email,
-        phone: order.phone,
-        items: order.items,
-        subtotal: order.total,
-        discount: 0,
-        shipping: 0,
-        tax: 0,
-        total: order.total,
-        shippingAddress: order.shippingAddress ?? '',
-        createdAt: new Date(order.createdAt).toLocaleDateString('en-IN'),
-      }, tracking);
+      fetch('/api/send-shipped-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: {
+            orderId: order.id,
+            customerName: order.customerName,
+            email: order.email,
+            phone: order.phone,
+            items: order.items,
+            subtotal: order.total,
+            discount: 0,
+            shipping: 0,
+            tax: 0,
+            total: order.total,
+            shippingAddress: order.shippingAddress ?? '',
+            createdAt: new Date(order.createdAt).toLocaleDateString('en-IN'),
+          },
+          trackingId: order.trackingId ?? '',
+        }),
+      });
     }
   };
 
