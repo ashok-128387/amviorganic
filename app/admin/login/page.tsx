@@ -1,18 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminStore } from '@/lib/admin-store';
+
+const ADMIN_PASSWORD = 'amvi@admin2024';
 
 export default function AdminLoginPage() {
-  const adminLogin = useAdminStore((s) => s.adminLogin);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const ok = adminLogin(password);
-    if (ok) {
-      setTimeout(() => { window.location.replace('/admin'); }, 150);
+    if (password === ADMIN_PASSWORD) {
+      // Manually set adminLoggedIn in localStorage so Zustand picks it up
+      try {
+        const stored = localStorage.getItem('amvi-admin-store-v2');
+        const parsed = stored ? JSON.parse(stored) : { state: {} };
+        parsed.state.adminLoggedIn = true;
+        localStorage.setItem('amvi-admin-store-v2', JSON.stringify(parsed));
+      } catch (_) {}
+      window.location.replace('/admin');
     } else {
       setError('Incorrect password. Try again.');
     }
@@ -46,7 +52,6 @@ export default function AdminLoginPage() {
             Login
           </button>
         </form>
-        <p className="text-center text-xs text-gray-400 mt-6">Default password: amvi@admin2024</p>
       </div>
     </div>
   );
