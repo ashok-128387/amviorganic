@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { AdminProduct } from '@/lib/admin-store';
+import { mockProducts } from '@/lib/mock-data';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
 
 const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
@@ -21,8 +22,9 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     fetch('/api/products-get').then(r => r.json()).then(({ products: dbProducts }) => {
-      if (dbProducts) setProducts(dbProducts);
-    });
+      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
+      else setProducts(mockProducts as AdminProduct[]);
+    }).catch(() => setProducts(mockProducts as AdminProduct[]));
   }, []);
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
