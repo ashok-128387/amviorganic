@@ -1,21 +1,17 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { useAdminStore } from '@/lib/admin-store';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Package, Truck, Mail, Home } from 'lucide-react';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const { user, orders } = useStore();
-  const [products, setProducts] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
-  }, []);
-
+  const { products } = useAdminStore();
   const order = orders.find((o) => o.id === orderId);
 
   if (!order) {

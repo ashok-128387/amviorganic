@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Product } from './mock-data';
+import { Product, mockProducts } from './mock-data';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -155,17 +155,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
-      // ── Products / Blogs / Coupons are NOT persisted — loaded fresh from DB ──
-      // ── Auth ──
-      adminLoggedIn: false,
-      adminLogin: (password) => {
-        if (password === ADMIN_PASSWORD) { set({ adminLoggedIn: true }); return true; }
-        return false;
-      },
-      adminLogout: () => set({ adminLoggedIn: false }),
-
       // ── Products ──
-      products: [],
+      products: mockProducts,
       addProduct: (p) => set((s) => ({ products: [...s.products, p] })),
       updateProduct: (id, p) =>
         set((s) => ({ products: s.products.map((x) => (x.id === id ? { ...x, ...p } : x)) })),

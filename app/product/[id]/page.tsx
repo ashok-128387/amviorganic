@@ -2,10 +2,11 @@
 
 import CartDrawer from '@/components/cart-drawer';
 import { mockReviews } from '@/lib/mock-data';
+import { useAdminStore } from '@/lib/admin-store';
 import { useStore } from '@/lib/store';
 import { Heart, Share2, Copy, MessageCircle, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use, useEffect } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface ProductPageProps {
@@ -14,13 +15,8 @@ interface ProductPageProps {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { id } = use(params);
-  const [product, setProduct] = useState<any | null>(null);
-
-  useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
-      setProduct(products?.find((p: any) => p.id === id) ?? null);
-    });
-  }, [id]);
+  const { products } = useAdminStore();
+  const product = products.find((p) => p.id === id) ?? null;
 
   const productReviews = mockReviews.filter((r) => r.productId === id);
   const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen } = useStore();

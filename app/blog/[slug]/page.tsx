@@ -1,23 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useAdminStore } from '@/lib/admin-store';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CartDrawer from '@/components/cart-drawer';
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [post, setPost] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs }) => {
-      setPost(blogs?.find((b: any) => b.slug === slug && b.published) ?? null);
-      setLoading(false);
-    });
-  }, [slug]);
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400">Loading...</p></div>;
+  const { blogs } = useAdminStore();
+  const post = blogs.find((b) => b.slug === slug && b.published) ?? null;
 
   if (!post) return (
     <div className="min-h-screen flex items-center justify-center text-center">

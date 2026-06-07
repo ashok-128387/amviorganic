@@ -3,19 +3,9 @@
 import { useAdminStore } from '@/lib/admin-store';
 import { Package, FileText, Tag, ShoppingBag, TrendingUp, AlertCircle, Users, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-  const { orders, users } = useAdminStore();
-  const [products, setProducts] = useState<any[]>([]);
-  const [blogs, setBlogs] = useState<any[]>([]);
-  const [coupons, setCoupons] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
-    fetch('/api/blogs-get').then(r => r.json()).then(({ blogs: b }) => { if (b) setBlogs(b); });
-    fetch('/api/coupons-get').then(r => r.json()).then(({ coupons: c }) => { if (c) setCoupons(c); });
-  }, []);
+  const { orders, users, products, blogs, coupons } = useAdminStore();
 
   const revenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pending = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
