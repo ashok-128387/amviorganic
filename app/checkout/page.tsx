@@ -240,6 +240,7 @@ export default function CheckoutPage() {
                   <MapPin size={20} /> Delivery Address
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                  <input type="text" name="firstName" placeholder="First Name *" value={formData.firstName}
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                   <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName}
@@ -247,6 +248,7 @@ export default function CheckoutPage() {
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                  <input type="email" name="email" placeholder="Email Address *" value={formData.email}
                     onChange={handleInputChange}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-3 focus-within:border-green-700">
