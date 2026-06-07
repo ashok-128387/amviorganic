@@ -92,14 +92,15 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      const storedUsers = JSON.parse(localStorage.getItem('amvi-users') || '{}');
-      if (!storedUsers[normalizedEmail]) {
+      // Check DB if user exists
+      const res = await fetch('/api/user-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail }) });
+      const data = await res.json();
+      if (data.exists) {
+        setUser({ id: data.user.id, email: normalizedEmail, name: data.user.name, password: '', createdAt: new Date() });
+        router.replace('/');
+      } else {
         setIsNewUser(true);
         setStep('name');
-      } else {
-        const user = storedUsers[normalizedEmail];
-        setUser({ id: user.id, email: normalizedEmail, name: user.name, password: '', createdAt: new Date() });
-        router.replace('/');
       }
     } finally {
       setLoading(false);
@@ -111,9 +112,8 @@ export default function LoginPage() {
     if (!name.trim()) { setError('Enter your name'); return; }
     setLoading(true);
     const id = `u-${Date.now()}`;
-    const storedUsers = JSON.parse(localStorage.getItem('amvi-users') || '{}');
-    storedUsers[normalizedEmail] = { id, name };
-    localStorage.setItem('amvi-users', JSON.stringify(storedUsers));
+    // Save to DB
+    await fetch('/api/user-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name, email: normalizedEmail }) });
     await fetch('/api/send-welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail, name }) });
     addRegisteredUser({ id, name, email: normalizedEmail, registeredAt: new Date().toISOString() });
     setUser({ id, email: normalizedEmail, name, password: '', createdAt: new Date() });

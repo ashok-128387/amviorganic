@@ -152,6 +152,21 @@ export default function CheckoutPage() {
             };
             addOrder(orderData);
             clearCart();
+            // Save order to DB permanently
+            fetch('/api/orders-save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...orderData,
+                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                items: orderItems.map((item) => {
+                  const product = products.find((p) => p.id === item.productId);
+                  const variation = product?.variations.find((v) => v.id === item.variationId);
+                  return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+                }),
+                subtotal: cartTotal, discount, shipping, tax,
+              }),
+            });
             // Send order confirmation email via server API
             fetch('/api/send-order-email', {
               method: 'POST',
