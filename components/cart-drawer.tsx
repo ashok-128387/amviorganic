@@ -40,8 +40,7 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Gold accent bar */}
-        <div style={{ height: 3, background: 'linear-gradient(90deg, #c8922a, #e8b84b, #c8922a)' }} />
+        {/* Gold accent bar removed */}
 
         {/* Free shipping bar */}
         {cart.length > 0 && (

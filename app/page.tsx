@@ -3,6 +3,7 @@
 import CartDrawer from '@/components/cart-drawer';
 import ProductCard from '@/components/product-card';
 import BannerSlider from '@/components/banner-slider';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Merriweather } from 'next/font/google';
 
@@ -606,17 +607,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-green-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">Premium Jaggery at Best Price</h2>
-          <p className="text-green-100 mb-8 max-w-2xl mx-auto">
-            Get certified, organic jaggery products with same-day delivery in select areas
-          </p>
-          <button className="bg-amber-500 text-green-900 px-8 py-3 rounded-lg font-semibold hover:bg-amber-400 transition">
-            Explore All Products
-          </button>
-        </div>
+      {/* CTA Section - Brand Poster */}
+      <section>
+        <Link href="/products">
+          <img
+            src="/Product images for website/Product images for website/Jaggery _Where Science Meets Tradition_ poster v.png"
+            alt="Jaggery - Where Science Meets Tradition"
+            style={{ display: 'block', width: '100%', height: 'auto' }}
+          />
+        </Link>
       </section>
 
       {/* Certification Carousel */}

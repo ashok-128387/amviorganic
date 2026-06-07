@@ -1,7 +1,7 @@
 'use client';
 
 import CartDrawer from '@/components/cart-drawer';
-import { mockReviews } from '@/lib/mock-data';
+import { mockProducts, mockReviews } from '@/lib/mock-data';
 import { useStore } from '@/lib/store';
 import { Heart, Share2, Copy, MessageCircle, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
@@ -85,7 +85,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   return (
     <>
       <CartDrawer />
-      <main className="min-h-screen bg-white">
+      <main className="bg-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
@@ -274,12 +274,76 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Tabs */}
-          <div className="mt-14">
+          <div className="mt-14 mb-6">
             <TabsComponent product={product} productReviews={productReviews} />
           </div>
         </div>
       </main>
+
+      {/* You May Also Like */}
+      <section className="py-14" style={{ background: '#f5f2ed' }}>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: '#1e4a2a' }}>You May Also Like</h2>
+            <p className="text-sm mt-2" style={{ color: '#888' }}>Handpicked products just for you</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {mockProducts.slice(0, 4).map((p) => {
+              const price = Math.min(...p.variations.map(v => v.price));
+              return (
+                <div key={p.id} className="bg-white rounded-2xl overflow-hidden flex flex-col"
+                  style={{ border: '1px solid #ede8e0', boxShadow: '0 2px 12px rgba(30,74,42,0.07)' }}>
+                  <Link href={`/product/${p.id}`} className="block">
+                    <div className="aspect-square overflow-hidden" style={{ background: '#f5f2ed' }}>
+                      <img src={p.image} alt={p.name}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  </Link>
+                  <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
+                    <Link href={`/product/${p.id}`}>
+                      <h3 className="font-semibold text-sm sm:text-base leading-snug hover:text-green-700 transition"
+                        style={{ color: '#1e4a2a' }}>{p.name}</h3>
+                    </Link>
+                    <p className="text-xs text-gray-500 line-clamp-2">{p.description.split('\n')[0]}</p>
+                    <p className="font-bold text-base" style={{ color: '#1e4a2a' }}>₹{price.toLocaleString('en-IN')}</p>
+                    <div className="flex gap-2 mt-auto pt-1">
+                      <AddToCartBtn product={p} />
+                      <Link href={`/product/${p.id}`}
+                        className="flex-1 text-center py-2 rounded-lg text-xs font-semibold border transition"
+                        style={{ borderColor: '#1e4a2a', color: '#1e4a2a' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#1e4a2a'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1e4a2a'; }}>
+                        View
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
     </>
+  );
+}
+
+function AddToCartBtn({ product }: { product: any }) {
+  const { addToCart, setCartOpen } = useStore();
+  const [added, setAdded] = useState(false);
+  const handleClick = () => {
+    const v = product.variations[0];
+    if (!v) return;
+    addToCart({ id: Math.random().toString(), productId: product.id, variationId: v.id, quantity: 1, addedAt: new Date() });
+    setAdded(true);
+    setCartOpen(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+  return (
+    <button onClick={handleClick}
+      className="flex-1 py-2 rounded-lg text-xs font-semibold transition"
+      style={{ background: added ? '#2a6b3e' : '#1e4a2a', color: '#fff' }}>
+      {added ? '✓ Added' : 'Add to Cart'}
+    </button>
   );
 }
 

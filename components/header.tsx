@@ -91,11 +91,11 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div style={{ borderRadius: 10, padding: 4, border: '1.5px solid rgba(200,146,42,0.35)' }}>
               <Image src="/Shoot Product only/12_Amvi-logoTL-01.webp" alt="AMVI Organics"
-                width={100} height={100} className="object-contain" style={{ borderRadius: 6 }} />
+                width={400} height={400} className="object-contain" style={{ borderRadius: 6, width: 80, height: 80 }} />
             </div>
             <div className="hidden sm:block">
-              <p className="font-extrabold leading-tight tracking-wide" style={{ color: '#e8b84b', fontSize: '1.15rem' }}>AMVI Organics</p>
-              <p className="tracking-widest" style={{ color: '#c8922a', fontSize: '0.62rem' }}>NATURE&apos;S TRUST, DELIVERED</p>
+              <p className="font-extrabold leading-tight tracking-wide" style={{ color: '#e8b84b', fontSize: '1.25rem' }}>AMVI Organics</p>
+              <p className="tracking-widest" style={{ color: '#c8922a', fontSize: '0.65rem' }}>NATURE&apos;S TRUST, DELIVERED</p>
             </div>
           </Link>
 

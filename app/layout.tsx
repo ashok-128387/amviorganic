@@ -22,21 +22,8 @@ export const metadata: Metadata = {
   description: 'Premium organic jaggery cubes, liquid jaggery, and jaggery powder - Pure and natural sweeteners',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/Shoot Product only/12_Amvi-logoTL-01.webp',
+    apple: '/Shoot Product only/12_Amvi-logoTL-01.webp',
   },
 }
 
@@ -49,7 +36,6 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} scroll-smooth`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900">
         <MarqueeBanner />
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, #c8922a, #e8b84b, #c8922a)', position: 'sticky', top: 0, zIndex: 51 }} />
         <Header />
         <CartDrawer />
         <main>{children}</main>
