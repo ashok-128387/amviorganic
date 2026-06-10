@@ -222,8 +222,8 @@ export default function AdminProductsPage() {
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 resize-none"
-                  placeholder="Product description..." />
+                  rows={10} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 resize-none font-mono"
+                  placeholder="Product description...&#10;Use blank lines between sections.&#10;Use • or - for bullet points.&#10;Example:&#10;Health Benefits&#10;• Rich in Iron&#10;• Boosts Immunity&#10;&#10;How to Use&#10;Use as a substitute for sugar in tea, coffee..." />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">

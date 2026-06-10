@@ -1,19 +1,60 @@
 'use client';
 
-import { useState } from 'react';
-import { useAdminStore, SiteSettings } from '@/lib/admin-store';
+import { useState, useEffect } from 'react';
+import { SiteSettings } from '@/lib/admin-store';
 import { Save, CheckCircle } from 'lucide-react';
 
+const DEFAULT_SETTINGS: SiteSettings = {
+  storeName: 'AMVI Organics',
+  contactEmail: 'contact@amviorganics.com',
+  contactPhone: '+91-8748899100',
+  address: 'Mandya, Karnataka, India',
+  instagramUrl: 'https://instagram.com/amviorganics',
+  facebookUrl: 'https://facebook.com/amviorganics',
+  whatsappNumber: '918748899100',
+  freeShippingThreshold: 500,
+  shippingCharge: 50,
+  taxPercent: 5,
+};
+
 export default function AdminSettingsPage() {
-  const { siteSettings, updateSiteSettings } = useAdminStore();
-  const [form, setForm] = useState<SiteSettings>({ ...siteSettings });
+  const [form, setForm] = useState<SiteSettings>({ ...DEFAULT_SETTINGS });
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/settings-get')
+      .then(r => r.json())
+      .then(({ settings }) => {
+        if (settings) {
+          setForm(prev => ({
+            ...prev,
+            storeName: settings.storeName ?? prev.storeName,
+            contactEmail: settings.contactEmail ?? prev.contactEmail,
+            contactPhone: settings.contactPhone ?? prev.contactPhone,
+            address: settings.address ?? prev.address,
+            instagramUrl: settings.instagramUrl ?? prev.instagramUrl,
+            facebookUrl: settings.facebookUrl ?? prev.facebookUrl,
+            whatsappNumber: settings.whatsappNumber ?? prev.whatsappNumber,
+            freeShippingThreshold: Number(settings.freeShippingThreshold ?? prev.freeShippingThreshold),
+            shippingCharge: Number(settings.shippingCharge ?? prev.shippingCharge),
+            taxPercent: Number(settings.taxPercent ?? prev.taxPercent),
+          }));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const set = (k: keyof SiteSettings, v: string | number) =>
     setForm(f => ({ ...f, [k]: v }));
 
-  const handleSave = () => {
-    updateSiteSettings(form);
+  const handleSave = async () => {
+    await fetch('/api/settings-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -30,6 +71,10 @@ export default function AdminSettingsPage() {
       />
     </div>
   );
+
+  if (loading) {
+    return <div className="text-sm text-gray-500 py-10">Loading settings...</div>;
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">

@@ -1,25 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAdminStore } from '@/lib/admin-store';
+import { RegisteredUser } from '@/lib/admin-store';
 import { Trash2, Search, Users, Mail, Calendar } from 'lucide-react';
 
 export default function AdminUsersPage() {
-  const { users, deleteRegisteredUser, addRegisteredUser } = useAdminStore();
+  const [users, setUsers] = useState<RegisteredUser[]>([]);
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () =>
     fetch('/api/users-get')
       .then(r => r.json())
-      .then(({ users: dbUsers }) => {
-        if (!dbUsers) return;
-        const existing = useAdminStore.getState().users.map(u => u.id);
-        dbUsers.forEach((u: any) => {
-          if (!existing.includes(u.id)) addRegisteredUser(u);
-        });
+      .then(({ users: data }) => {
+        if (data) setUsers(data);
       });
-  }, []);
+
+  useEffect(() => { load(); }, []);
+
+  const handleDelete = async (id: string) => {
+    await fetch('/api/user-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await load();
+    setDeleteConfirm(null);
+  };
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -132,7 +135,7 @@ export default function AdminUsersPage() {
                       {deleteConfirm === u.id ? (
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-gray-500 mr-1">Delete?</span>
-                          <button onClick={() => { deleteRegisteredUser(u.id); setDeleteConfirm(null); }}
+                          <button onClick={() => handleDelete(u.id)}
                             className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition">Yes</button>
                           <button onClick={() => setDeleteConfirm(null)}
                             className="px-2.5 py-1 rounded-lg text-xs bg-gray-100 text-gray-500 hover:bg-gray-200 transition">No</button>

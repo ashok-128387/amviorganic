@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAdminStore, AdminOrder } from '@/lib/admin-store';
+import { AdminOrder } from '@/lib/admin-store';
 import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package } from 'lucide-react';
 
 const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
@@ -15,37 +15,27 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus, updateOrderTracking, addAdminOrder } = useAdminStore();
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<AdminOrder['status'] | 'all'>('all');
   const [detailOrder, setDetailOrder] = useState<AdminOrder | null>(null);
   const [trackingInput, setTrackingInput] = useState('');
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () =>
     fetch('/api/orders-get')
       .then(r => r.json())
-      .then(({ orders: dbOrders }) => {
-        if (!dbOrders) return;
-        const existing = useAdminStore.getState().orders.map(o => o.id);
-        dbOrders.forEach((o: any) => {
-          if (!existing.includes(o.id)) {
-            addAdminOrder({
-              id: o.id, customerName: o.customerName, email: o.email,
-              phone: o.phone, total: o.total, status: o.status,
-              items: o.items, shippingAddress: o.shippingAddress,
-              trackingId: o.trackingId, createdAt: o.createdAt,
-            });
-          }
-        });
+      .then(({ orders: data }) => {
+        if (data) setOrders(data);
       });
-  }, []);
+
+  useEffect(() => { load(); }, []);
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
   const handleStatusChange = async (order: AdminOrder, status: AdminOrder['status']) => {
-    updateOrderStatus(order.id, status);
-    fetch('/api/order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: order.id, status }) });
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status } : o));
+    await fetch('/api/order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: order.id, status }) });
     if (status === 'shipped') {
       fetch('/api/send-shipped-email', {
         method: 'POST',
@@ -71,10 +61,10 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleSaveTracking = (orderId: string) => {
+  const handleSaveTracking = async (orderId: string) => {
     if (trackingInput.trim()) {
-      updateOrderTracking(orderId, trackingInput.trim());
-      fetch('/api/order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, trackingId: trackingInput.trim() }) });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, trackingId: trackingInput.trim() } : o));
+      await fetch('/api/order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, trackingId: trackingInput.trim() }) });
       if (detailOrder?.id === orderId) {
         setDetailOrder(o => o ? { ...o, trackingId: trackingInput.trim() } : o);
       }

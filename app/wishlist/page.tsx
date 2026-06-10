@@ -2,19 +2,25 @@
 
 import CartDrawer from '@/components/cart-drawer';
 import { useStore } from '@/lib/store';
-import { mockProducts } from '@/lib/mock-data';
+import { AdminProduct } from '@/lib/admin-store';
 import { Trash2, ShoppingCart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, addToCart } = useStore();
+  const [products, setProducts] = useState<AdminProduct[]>([]);
 
-  const wishlistItems = mockProducts.filter((p) =>
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+  }, []);
+
+  const wishlistItems = products.filter((p) =>
     wishlist.some((w) => w.productId === p.id)
   );
 
   const handleAddToCart = (productId: string) => {
-    const product = mockProducts.find((p) => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (product) {
       addToCart({
         id: Math.random().toString(),

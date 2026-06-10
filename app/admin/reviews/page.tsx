@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useAdminStore, ProductReview } from '@/lib/admin-store';
+import { useState, useEffect } from 'react';
+import { ProductReview } from '@/lib/admin-store';
 import { Trash2, Check, Star, Plus, X, Save, Edit2 } from 'lucide-react';
 
 const FILTERS = ['all', 'pending', 'approved'] as const;
@@ -9,13 +9,20 @@ const FILTERS = ['all', 'pending', 'approved'] as const;
 const EMPTY_FORM = { customerName: '', email: '', productName: '', rating: 5, title: '', comment: '' };
 
 export default function AdminReviewsPage() {
-  const { reviews, products, approveReview, deleteReview, addReview, updateReview } = useAdminStore();
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editForm, setEditForm] = useState<Partial<ProductReview>>({});
+
+  const load = () =>
+    fetch('/api/reviews-get').then(r => r.json()).then(({ reviews: data }) => {
+      if (data) setReviews(data);
+    });
+
+  useEffect(() => { load(); }, []);
 
   const filtered = reviews.filter((r) => {
     if (filter === 'approved') return r.approved;
@@ -24,11 +31,11 @@ export default function AdminReviewsPage() {
   });
   const pending = reviews.filter((r) => !r.approved).length;
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.customerName || !form.productName || !form.comment) return;
-    addReview({
+    const review: ProductReview = {
       id: `rev-${Date.now()}`,
-      productId: products?.find((p: any) => p.name === form.productName)?.id ?? 'custom',
+      productId: 'custom',
       productName: form.productName,
       customerName: form.customerName,
       email: form.email,
@@ -37,9 +44,17 @@ export default function AdminReviewsPage() {
       comment: form.comment,
       approved: false,
       createdAt: new Date().toISOString(),
-    });
+    };
+    await fetch('/api/review-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
+    await load();
     setForm(EMPTY_FORM);
     setShowAdd(false);
+  };
+
+  const handleToggleApprove = async (r: ProductReview) => {
+    const updated = { ...r, approved: !r.approved };
+    await fetch('/api/review-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+    await load();
   };
 
   const startEdit = (r: ProductReview) => {
@@ -47,13 +62,23 @@ export default function AdminReviewsPage() {
     setEditForm({ customerName: r.customerName, email: r.email, rating: r.rating, title: r.title, comment: r.comment });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editId) return;
-    updateReview(editId, editForm);
+    const original = reviews.find(r => r.id === editId);
+    if (!original) return;
+    const updated = { ...original, ...editForm };
+    await fetch('/api/review-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+    await load();
     setEditId(null);
   };
 
-  const productNames = products?.map((p: any) => p.name) ?? [];
+  const handleDelete = async (id: string) => {
+    await fetch('/api/review-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await load();
+    setDeleteConfirm(null);
+  };
+
+  const productNames = Array.from(new Set(reviews.map(r => r.productName)));
 
   return (
     <div className="space-y-5">
@@ -95,7 +120,6 @@ export default function AdminReviewsPage() {
               <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="Email" type="email" className="col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
 
-              {/* Product name — datalist for quick pick */}
               <div className="col-span-2">
                 <input value={form.productName} onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
                   list="product-list" placeholder="Product Name *"
@@ -105,7 +129,6 @@ export default function AdminReviewsPage() {
                 </datalist>
               </div>
 
-              {/* Star rating picker */}
               <div className="col-span-2 flex items-center gap-1">
                 <span className="text-xs font-semibold text-gray-600 mr-2">Rating</span>
                 {[1, 2, 3, 4, 5].map(s => (
@@ -208,7 +231,7 @@ export default function AdminReviewsPage() {
                 {/* Actions */}
                 {editId !== r.id && (
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-                    <button onClick={() => approveReview(r.id)}
+                    <button onClick={() => handleToggleApprove(r)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
                       style={{ background: r.approved ? '#f5f2ed' : '#1e4a2a18', color: r.approved ? '#888' : '#1e4a2a' }}>
                       <Check size={12} />
@@ -223,7 +246,7 @@ export default function AdminReviewsPage() {
                     {deleteConfirm === r.id ? (
                       <div className="flex items-center gap-1 ml-auto">
                         <span className="text-xs text-gray-500 mr-1">Delete?</span>
-                        <button onClick={() => { deleteReview(r.id); setDeleteConfirm(null); }}
+                        <button onClick={() => handleDelete(r.id)}
                           className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition">Yes</button>
                         <button onClick={() => setDeleteConfirm(null)}
                           className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-100 text-gray-500 hover:bg-gray-200 transition">No</button>

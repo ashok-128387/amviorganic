@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import { Heart, ShoppingCart, LogOut, Menu, X, ChevronDown, Search } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { mockProducts } from '@/lib/mock-data';
+import { AdminProduct } from '@/lib/admin-store';
 import { useRouter } from 'next/navigation';
 
 const SITE_PAGES = [
@@ -31,10 +31,15 @@ export default function Header() {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+  }, []);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -63,7 +68,7 @@ export default function Header() {
 
   const q = searchQuery.toLowerCase().trim();
   const productResults = q
-    ? mockProducts.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+    ? products.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
     : [];
   const pageResults = q
     ? SITE_PAGES.filter(p => p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))
@@ -274,7 +279,7 @@ export default function Header() {
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2" style={{ background: '#f5f2ed' }}>
               <Search size={15} style={{ color: '#1e4a2a' }} />
               <input type="text" placeholder="Search..." className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#1e4a2a' }}
-                onKeyDown={e => { if (e.key === 'Enter') { const q = (e.target as HTMLInputElement).value.trim(); if (q) { const r = mockProducts.find(p => p.name.toLowerCase().includes(q.toLowerCase())); if (r) router.push(`/product/${r.id}`); setMobileMenuOpen(false); } } }} />
+                onKeyDown={e => { if (e.key === 'Enter') { const q = (e.target as HTMLInputElement).value.trim(); if (q) { const r = products.find(p => p.name.toLowerCase().includes(q.toLowerCase())); if (r) router.push(`/product/${r.id}`); setMobileMenuOpen(false); } } }} />
             </div>
 
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#1e4a2a' }}>Home</Link>

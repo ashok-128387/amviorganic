@@ -70,6 +70,24 @@ export async function initDb() {
       razorpay_payment_id TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS reviews (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      email TEXT,
+      rating INTEGER NOT NULL DEFAULT 5,
+      title TEXT,
+      comment TEXT NOT NULL,
+      approved INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
   await seedProducts();
 }

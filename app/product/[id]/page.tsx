@@ -1,9 +1,9 @@
 'use client';
 
 import CartDrawer from '@/components/cart-drawer';
-import { mockProducts, mockReviews } from '@/lib/mock-data';
+import { AdminProduct, useAdminStore } from '@/lib/admin-store';
 import { useStore } from '@/lib/store';
-import { Heart, Share2, Copy, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Heart, Share2, Copy, MessageCircle, ShoppingCart, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,9 +24,74 @@ export default function ProductPage({ params }: ProductPageProps) {
     });
   }, [id]);
 
-  const productReviews = mockReviews.filter((r) => r.productId === id);
+  const [productReviews, setProductReviews] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<AdminProduct[]>([]);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
+
+  useEffect(() => {
+    fetch('/api/reviews-get').then(r => r.json()).then(({ reviews }) => {
+      if (reviews) setProductReviews(reviews.filter((r: any) => r.productId === id && r.approved));
+    });
+    fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
+      if (products) setAllProducts(products);
+    });
+    fetch('/api/settings-get').then(r => r.json()).then(({ settings }) => {
+      if (settings?.freeShippingThreshold) setFreeShippingThreshold(Number(settings.freeShippingThreshold));
+    });
+  }, [id]);
   const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen } = useStore();
+  const { adminLoggedIn } = useAdminStore();
   const router = useRouter();
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [editDescValue, setEditDescValue] = useState('');
+
+  const [adminEditOpen, setAdminEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+
+  const handleSaveDesc = async () => {
+    if (!product) return;
+    await fetch('/api/product-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...product,
+        description: editDescValue,
+        createdAt: product.createdAt?.toISOString?.() || product.createdAt,
+      }),
+    });
+    setProduct({ ...product, description: editDescValue });
+    setEditingDesc(false);
+  };
+
+  const openAdminEdit = () => {
+    if (!product) return;
+    setEditForm({
+      name: product.name,
+      category: product.category,
+      image: product.image,
+      variations: product.variations.map((v: any) => ({ ...v })),
+    });
+    setAdminEditOpen(true);
+  };
+
+  const handleAdminSave = async () => {
+    if (!product || !editForm) return;
+    const updated = {
+      ...product,
+      name: editForm.name,
+      category: editForm.category,
+      image: editForm.image,
+      variations: editForm.variations,
+      createdAt: product.createdAt?.toISOString?.() || product.createdAt,
+    };
+    await fetch('/api/product-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    setProduct(updated);
+    setAdminEditOpen(false);
+  };
 
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
@@ -88,13 +153,97 @@ export default function ProductPage({ params }: ProductPageProps) {
       <main className="bg-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
             <Link href="/" className="hover:text-green-700 transition">Home</Link>
             <span>/</span>
             <Link href="/products" className="hover:text-green-700 transition">Products</Link>
             <span>/</span>
             <span className="text-gray-900 font-medium truncate">{product.name}</span>
           </div>
+          {adminLoggedIn && (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full text-white" style={{ background: '#1e4a2a' }}>Admin View</span>
+                <div className="flex gap-2">
+                  <button onClick={openAdminEdit}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition"
+                    style={{ background: '#c8922a' }}>
+                    <Pencil size={12} /> Quick Edit
+                  </button>
+                  <Link href="/admin/products"
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition"
+                    style={{ background: '#6366f1' }}
+                    target="_blank">
+                    <Pencil size={12} /> Full Editor
+                  </Link>
+                </div>
+              </div>
+
+              {/* Admin Quick Edit Panel */}
+              {adminEditOpen && editForm && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-gray-900">Quick Edit Product</p>
+                    <button onClick={() => setAdminEditOpen(false)} className="text-xs text-gray-500 hover:text-gray-700">✕ Close</button>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Product Name</label>
+                      <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                      <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700">
+                        <option>Sweeteners</option>
+                        <option>Combo Deals</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Main Image URL</label>
+                    <input value={editForm.image} onChange={e => setEditForm({ ...editForm, image: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Variations (Price / Stock)</label>
+                    <div className="space-y-2">
+                      {editForm.variations.map((v: any, i: number) => (
+                        <div key={v.id} className="flex gap-2 items-center">
+                          <input value={v.name} onChange={e => {
+                            const vars = [...editForm.variations];
+                            vars[i] = { ...vars[i], name: e.target.value };
+                            setEditForm({ ...editForm, variations: vars });
+                          }}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-green-700" placeholder="Name" />
+                          <input type="number" value={v.price} onChange={e => {
+                            const vars = [...editForm.variations];
+                            vars[i] = { ...vars[i], price: Number(e.target.value) };
+                            setEditForm({ ...editForm, variations: vars });
+                          }}
+                            className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-green-700" placeholder="Price" />
+                          <input type="number" value={v.stock} onChange={e => {
+                            const vars = [...editForm.variations];
+                            vars[i] = { ...vars[i], stock: Number(e.target.value) };
+                            setEditForm({ ...editForm, variations: vars });
+                          }}
+                            className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-green-700" placeholder="Stock" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={handleAdminSave}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold text-white"
+                      style={{ background: '#1e4a2a' }}>Save Changes</button>
+                    <button onClick={() => setAdminEditOpen(false)}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           <div className="grid md:grid-cols-2 gap-8 lg:gap-10 items-start">
             {/* Images */}
@@ -238,7 +387,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Trust badges row */}
               <div className="grid grid-cols-3 gap-2">
-                {[['🌿', '100% Organic'], ['🚚', 'Free over ₹500'], ['✅', 'FSSAI Certified']].map(([icon, label]) => (
+                {[['🌿', '100% Organic'], ['🚚', `Free over ₹${freeShippingThreshold}`], ['✅', 'FSSAI Certified']].map(([icon, label]) => (
                   <div key={label} className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-center"
                     style={{ background: '#f5f2ed' }}>
                     <span className="text-lg">{icon}</span>
@@ -275,7 +424,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           {/* Tabs */}
           <div className="mt-14 mb-6">
-            <TabsComponent product={product} productReviews={productReviews} />
+            <TabsComponent product={product} productReviews={productReviews} adminLoggedIn={adminLoggedIn} editingDesc={editingDesc} setEditingDesc={setEditingDesc} editDescValue={editDescValue} setEditDescValue={setEditDescValue} handleSaveDesc={handleSaveDesc} />
           </div>
         </div>
       </main>
@@ -288,7 +437,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             <p className="text-sm mt-2" style={{ color: '#888' }}>Handpicked products just for you</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {mockProducts.slice(0, 4).map((p) => {
+            {allProducts.filter(p => p.id !== product.id).slice(0, 4).map((p) => {
               const price = Math.min(...p.variations.map(v => v.price));
               return (
                 <div key={p.id} className="bg-white rounded-2xl overflow-hidden flex flex-col"
@@ -493,7 +642,7 @@ function ProductDescription({ description }: { description: string }) {
   );
 }
 
-function TabsComponent({ product, productReviews }: { product: any; productReviews: any[] }) {
+function TabsComponent({ product, productReviews, adminLoggedIn, editingDesc, setEditingDesc, editDescValue, setEditDescValue, handleSaveDesc }: { product: any; productReviews: any[]; adminLoggedIn: boolean; editingDesc: boolean; setEditingDesc: (v: boolean) => void; editDescValue: string; setEditDescValue: (v: string) => void; handleSaveDesc: () => void }) {
   const [activeTab, setActiveTab] = useState('description');
   const { isLoggedIn } = useStore();
 
@@ -512,7 +661,33 @@ function TabsComponent({ product, productReviews }: { product: any; productRevie
       </div>
 
       {activeTab === 'description' && (
-        <ProductDescription description={product.description} />
+        <div>
+          {adminLoggedIn && !editingDesc && (
+            <div className="flex justify-end mb-3">
+              <button onClick={() => { setEditDescValue(product.description); setEditingDesc(true); }}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition"
+                style={{ background: '#1e4a2a' }}>
+                <Pencil size={12} /> Edit Description
+              </button>
+            </div>
+          )}
+          {adminLoggedIn && editingDesc ? (
+            <div className="space-y-3">
+              <textarea value={editDescValue} onChange={e => setEditDescValue(e.target.value)}
+                rows={12} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-700 resize-none font-mono"
+                placeholder="Product description... use blank lines for sections, • for bullets" />
+              <div className="flex gap-2">
+                <button onClick={handleSaveDesc}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white"
+                  style={{ background: '#1e4a2a' }}>Save Changes</button>
+                <button onClick={() => setEditingDesc(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <ProductDescription description={product.description} />
+          )}
+        </div>
       )}
 
       {activeTab === 'reviews' && (

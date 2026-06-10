@@ -131,7 +131,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
         <div style="background:#f9f9f9;border-radius:10px;padding:16px 18px;margin-bottom:24px">
           ${order.discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:#555">Discount</span><span style="font-size:13px;color:#16a34a;font-weight:700">− ₹${order.discount.toLocaleString('en-IN')}</span></div>` : ''}
           <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:#555">Shipping</span><span style="font-size:13px;color:#555">${order.shipping === 0 ? 'FREE' : `₹${order.shipping}`}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;color:#555">Tax (5%)</span><span style="font-size:13px;color:#555">₹${order.tax}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;color:#555">Tax</span><span style="font-size:13px;color:#555">₹${order.tax}</span></div>
           <div style="display:flex;justify-content:space-between;border-top:1px solid #e5e5e5;padding-top:12px"><span style="font-size:15px;font-weight:800;color:#1a1a1a">Total</span><span style="font-size:16px;font-weight:800;color:#1e4a2a">₹${order.total.toLocaleString('en-IN')}</span></div>
         </div>
 

@@ -2,22 +2,54 @@
 
 import CartDrawer from '@/components/cart-drawer';
 import { useStore } from '@/lib/store';
-import { mockProducts } from '@/lib/mock-data';
+import { AdminProduct } from '@/lib/admin-store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Package, ArrowLeft, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+interface OrderItem {
+  productId: string;
+  variationId: string;
+  quantity: number;
+  price: number;
+  name?: string;
+}
+
+interface DbOrder {
+  id: string;
+  userId: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  total: number;
+  status: string;
+  items: OrderItem[];
+  shippingAddress: string;
+  trackingId?: string;
+  createdAt: string;
+}
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { isLoggedIn, user, orders } = useStore();
+  const { isLoggedIn, user } = useStore();
+  const [orders, setOrders] = useState<DbOrder[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
 
-  // Redirect to login if not logged in
-  if (!isLoggedIn) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/login');
+      return;
+    }
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    if (user?.email) {
+      fetch(`/api/orders-get?email=${encodeURIComponent(user.email)}`)
+        .then(r => r.json())
+        .then(({ orders: o }) => { if (o) setOrders(o); });
+    }
+  }, [isLoggedIn, user, router]);
 
-  const userOrders = orders.filter((o) => o.userId === user?.id);
+  if (!isLoggedIn) return null;
 
   return (
     <>
@@ -31,7 +63,7 @@ export default function OrdersPage() {
             <h1 className="text-4xl font-bold text-gray-900">My Orders</h1>
           </div>
 
-          {userOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
               <Package size={64} className="mx-auto text-gray-400 mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">No Orders Yet</h2>
@@ -48,7 +80,7 @@ export default function OrdersPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {userOrders.map((order) => (
+              {orders.map((order) => (
                 <div
                   key={order.id}
                   className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
@@ -65,7 +97,7 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Order Date</p>
                         <p className="font-bold text-gray-900">
-                          {order.createdAt.toLocaleDateString('en-IN', {
+                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
@@ -81,15 +113,15 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Status</p>
                         <div className="flex items-center gap-2">
-                          {order.status === 'completed' ? (
+                          {order.status === 'completed' || order.status === 'delivered' ? (
                             <>
                               <CheckCircle size={18} className="text-green-600" />
-                              <span className="font-bold text-green-600">Completed</span>
+                              <span className="font-bold text-green-600 capitalize">{order.status}</span>
                             </>
                           ) : (
                             <>
                               <Clock size={18} className="text-blue-600" />
-                              <span className="font-bold text-blue-600">Pending</span>
+                              <span className="font-bold text-blue-600 capitalize">{order.status}</span>
                             </>
                           )}
                         </div>
@@ -102,12 +134,10 @@ export default function OrdersPage() {
                     <h3 className="font-bold text-gray-900 mb-4">Items ({order.items.length})</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {order.items.map((item, idx) => {
-                        const product = mockProducts.find((p) => p.id === item.productId);
+                        const product = products.find((p) => p.id === item.productId);
                         const variation = product?.variations.find(
                           (v) => v.id === item.variationId
                         );
-
-                        if (!product || !variation) return null;
 
                         return (
                           <div
@@ -115,16 +145,16 @@ export default function OrdersPage() {
                             className="flex gap-4 p-4 bg-gray-50 rounded-lg"
                           >
                             <img
-                              src={product.image}
-                              alt={product.name}
+                              src={product?.image || '/placeholder-logo.png'}
+                              alt={product?.name || item.name || 'Product'}
                               className="w-16 h-16 object-cover rounded"
                             />
                             <div className="flex-1">
                               <p className="font-semibold text-gray-900 text-sm">
-                                {product.name}
+                                {product?.name || item.name || 'Product'}
                               </p>
                               <p className="text-xs text-gray-600">
-                                {variation.name} x {item.quantity}
+                                {variation?.name || ''} x {item.quantity}
                               </p>
                               <p className="font-bold text-gray-900 text-sm mt-1">
                                 ₹{(item.price * item.quantity).toLocaleString('en-IN')}

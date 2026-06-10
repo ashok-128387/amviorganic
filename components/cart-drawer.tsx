@@ -1,15 +1,25 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { AdminProduct } from '@/lib/admin-store';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
-import { mockProducts } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
 
 export default function CartDrawer() {
   const { cartOpen, setCartOpen, cart, removeFromCart, updateCartQuantity } = useStore();
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(999);
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    fetch('/api/settings-get').then(r => r.json()).then(({ settings: s }) => {
+      if (s?.freeShippingThreshold) setFreeShippingThreshold(Number(s.freeShippingThreshold));
+    });
+  }, []);
 
   const cartTotal = cart.reduce((total, item) => {
-    const product = mockProducts.find((p) => p.id === item.productId);
+    const product = products.find((p) => p.id === item.productId);
     const variation = product?.variations.find((v) => v.id === item.variationId);
     return total + (variation?.price || 0) * item.quantity;
   }, 0);
@@ -40,14 +50,12 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Gold accent bar removed */}
-
         {/* Free shipping bar */}
         {cart.length > 0 && (
           <div className="px-5 py-2.5 text-xs font-medium text-center" style={{ background: '#f0faf2', color: '#1e4a2a', borderBottom: '1px solid #d4edda' }}>
-            {cartTotal >= 999
+            {cartTotal >= freeShippingThreshold
               ? '🎉 You qualify for FREE shipping!'
-              : `Add ₹${(999 - cartTotal).toLocaleString('en-IN')} more for FREE shipping`}
+              : `Add ₹${(freeShippingThreshold - cartTotal).toLocaleString('en-IN')} more for FREE shipping`}
           </div>
         )}
 
@@ -66,7 +74,7 @@ export default function CartDrawer() {
           ) : (
             <div className="space-y-3">
               {cart.map((item) => {
-                const product = mockProducts.find((p) => p.id === item.productId);
+                const product = products.find((p) => p.id === item.productId);
                 const variation = product?.variations.find((v) => v.id === item.variationId);
                 if (!product || !variation) return null;
 

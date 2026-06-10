@@ -1,7 +1,6 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { useAdminStore } from '@/lib/admin-store';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, ArrowRight, RefreshCw, CheckCircle } from 'lucide-react';
@@ -11,7 +10,21 @@ type Step = 'email' | 'otp' | 'name';
 export default function LoginPage() {
   const router = useRouter();
   const { setUser, isLoggedIn } = useStore();
-  const { generateOtp, verifyOtp, users, addRegisteredUser } = useAdminStore();
+  const [otpMap, setOtpMap] = useState<Record<string, { otp: string; expiresAt: number }>>({});
+
+  const generateOtp = (email: string) => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    setOtpMap(prev => ({ ...prev, [email]: { otp, expiresAt } }));
+    return otp;
+  };
+
+  const verifyOtp = (email: string, otp: string) => {
+    const entry = otpMap[email];
+    if (!entry || Date.now() > entry.expiresAt || entry.otp !== otp) return false;
+    setOtpMap(prev => { const n = { ...prev }; delete n[email]; return n; });
+    return true;
+  };
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -82,24 +95,32 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if user already registered in admin store
-    const existing = users.find(u => u.email === normalizedEmail);
-    if (existing) {
-      setUser({ id: existing.id, email: normalizedEmail, name: existing.name, password: '', createdAt: new Date() });
-      router.replace('/');
-    } else {
-      setStep('name');
-    }
+    // Check if user already registered in database
+    fetch('/api/user-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: normalizedEmail }) })
+      .then(r => r.json())
+      .then(({ exists, user: dbUser }) => {
+        if (exists && dbUser) {
+          setUser({ id: dbUser.id, email: normalizedEmail, name: dbUser.name, password: '', createdAt: new Date() });
+          router.replace('/');
+        } else {
+          setStep('name');
+        }
+      })
+      .catch(() => setStep('name'));
     setLoading(false);
   };
 
-  const handleSetName = (e: React.FormEvent) => {
+  const handleSetName = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError('Enter your name'); return; }
     setLoading(true);
     const id = `u-${Date.now()}`;
-    // Save to admin store (persisted in localStorage)
-    addRegisteredUser({ id, name: name.trim(), email: normalizedEmail, registeredAt: new Date().toISOString() });
+    // Save to database permanently
+    await fetch('/api/user-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name: name.trim(), email: normalizedEmail }),
+    });
     setUser({ id, email: normalizedEmail, name: name.trim(), password: '', createdAt: new Date() });
     // TODO: sendWelcomeEmail when Resend is ready
     setLoading(false);

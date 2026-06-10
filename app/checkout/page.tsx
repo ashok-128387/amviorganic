@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { useAdminStore } from '@/lib/admin-store';
+import { AdminProduct } from '@/lib/admin-store';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle } from 'lucide-react';
@@ -14,7 +14,7 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart, isLoggedIn, user, addOrder } = useStore();
-  const { products, validateCoupon } = useAdminStore();
+  const [products, setProducts] = useState<AdminProduct[]>([]);
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
@@ -29,10 +29,26 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Settings
+  const [settings, setSettings] = useState({ freeShippingThreshold: 500, shippingCharge: 50, taxPercent: 5 });
+
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; message: string } | null>(null);
   const [couponError, setCouponError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    fetch('/api/settings-get').then(r => r.json()).then(({ settings: s }) => {
+      if (s) {
+        setSettings({
+          freeShippingThreshold: Number(s.freeShippingThreshold ?? 500),
+          shippingCharge: Number(s.shippingCharge ?? 50),
+          taxPercent: Number(s.taxPercent ?? 5),
+        });
+      }
+    });
+  }, []);
 
   // Fix: redirect in useEffect, not during render
   useEffect(() => {
@@ -49,8 +65,8 @@ export default function CheckoutPage() {
   }, 0);
 
   const discount = appliedCoupon?.discount ?? 0;
-  const shipping = cartTotal > 500 ? 0 : 50;
-  const tax = Math.round(cartTotal * 0.05);
+  const shipping = cartTotal >= settings.freeShippingThreshold ? 0 : settings.shippingCharge;
+  const tax = Math.round(cartTotal * (settings.taxPercent / 100));
   const total = cartTotal - discount + shipping + tax;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -58,15 +74,20 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     setCouponError('');
     if (!couponInput.trim()) return;
-    const result = validateCoupon(couponInput.trim(), cartTotal);
+    const res = await fetch('/api/coupon-validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: couponInput.trim(), orderTotal: cartTotal }),
+    });
+    const result = await res.json();
     if (result.valid) {
       setAppliedCoupon({ code: couponInput.toUpperCase(), discount: result.discount, message: result.message });
       setCouponInput('');
     } else {
-      setCouponError(result.message);
+      setCouponError(result.message || 'Invalid coupon');
       setAppliedCoupon(null);
     }
   };
@@ -152,6 +173,10 @@ export default function CheckoutPage() {
             };
             addOrder(orderData);
             clearCart();
+            // Increment coupon usage if applied
+            if (appliedCoupon) {
+              fetch('/api/coupon-use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
+            }
             // Save order to DB permanently
             fetch('/api/orders-save', {
               method: 'POST',
@@ -283,7 +308,7 @@ export default function CheckoutPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3 items-start mb-6">
                 <Truck size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-blue-900">Free delivery on orders above ₹500</p>
+                  <p className="font-semibold text-blue-900">Free delivery on orders above ₹{settings.freeShippingThreshold}</p>
                   <p className="text-sm text-blue-800">Standard delivery: 3-5 business days</p>
                 </div>
               </div>
@@ -384,7 +409,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Tax (5%)</span>
+                  <span>Tax ({settings.taxPercent}%)</span>
                   <span>₹{tax}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2.5 border-t border-gray-100">
