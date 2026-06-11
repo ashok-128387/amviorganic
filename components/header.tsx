@@ -95,7 +95,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0">
             <Image
-              src="/Product images for website/18_Amvi logo+Organic-Reverse.png"
+              src="/logo-reverse.png"
               alt="AMVI Organics"
               width={220} height={88}
               className="object-contain"
