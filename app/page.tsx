@@ -397,6 +397,7 @@ export default function Home() {
   const sweeteners = allProducts.filter((p: any) => p.category === 'Sweeteners');
   const combos = allProducts.filter((p: any) => p.category === 'Combo Deals');
   const newProducts = allProducts.filter((p: any) => p.category === 'New');
+  const hasNew = newProducts.length > 0;
   const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : activeCategory === 'Combo Deals' ? combos : newProducts;
 
   return (
@@ -501,7 +502,7 @@ export default function Home() {
           {/* Category Tabs */}
           <div className="flex justify-center mb-10">
             <div className="flex bg-gray-100 rounded-full p-1 gap-1">
-              {(['Sweeteners', 'Combo Deals', 'New'] as const).map((cat) => (
+              {(['Sweeteners', 'Combo Deals'] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
@@ -514,6 +515,18 @@ export default function Home() {
                   {cat}
                 </button>
               ))}
+              {hasNew && (
+                <button
+                  onClick={() => setActiveCategory('New')}
+                  className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold text-sm transition-all duration-200 ${
+                    activeCategory === 'New'
+                      ? 'bg-green-700 text-white shadow-md'
+                      : 'text-gray-600 hover:text-green-700'
+                  }`}
+                >
+                  New
+                </button>
+              )}
             </div>
           </div>
 
