@@ -12,135 +12,54 @@ const merriweather = Merriweather({
   weight: ['700']
 });
 
-// Certification Carousel Component
+// Certification Carousel Component — continuous scroll on all screen sizes
 function CertificationCarousel() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
   const certifications = [
-    {
-      name: 'FSSAI',
-      image: '/Certification logo/Certification logo/fssai-logo-png_seeklogo-304263.png',
-      description: 'Food Safety & Standards Authority of India'
-    },
-    {
-      name: 'Jaivik Bharat',
-      image: '/Certification logo/Certification logo/Jaivik Bharat logo (1).png',
-      description: 'Organic Certification'
-    },
-    {
-      name: 'PGS India Organic',
-      image: '/Certification logo/Certification logo/PGS India Organic logo (1).png',
-      description: 'Participatory Guarantee System'
-    },
-    {
-      name: 'ROCO',
-      image: '/Certification logo/Certification logo/ROCO Logo (3).jpg',
-      description: 'Registered Organic Certifying Organization'
-    }
+    { name: 'FSSAI', image: '/Certification logo/Certification logo/fssai-logo-png_seeklogo-304263.png', description: 'Food Safety & Standards Authority of India' },
+    { name: 'Jaivik Bharat', image: '/Certification logo/Certification logo/Jaivik Bharat logo (1).png', description: 'Organic Certification' },
+    { name: 'PGS India Organic', image: '/Certification logo/Certification logo/PGS India Organic logo (1).png', description: 'Participatory Guarantee System' },
+    { name: 'ROCO', image: '/Certification logo/Certification logo/ROCO Logo (3).jpg', description: 'Registered Organic Certifying Organization' },
   ];
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === certifications.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 3000); // Back to 3 seconds for smooth rotation
-
-    return () => clearInterval(timer);
-  }, [certifications.length]);
+  // Triplicate for seamless infinite loop
+  const items = [...certifications, ...certifications, ...certifications];
 
   return (
-    <section className="bg-white py-12 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Trusted Certifications</h2>
-          <p className="text-gray-600">Our commitment to quality and authenticity</p>
-        </div>
-        
-        {/* Mobile Carousel - Continuous Running */}
-        <div className="md:hidden">
-          <div className="flex justify-center items-center">
-            <div className="text-center">
-              <div className="transition-all duration-500 ease-in-out">
-                <img
-                  src={certifications[currentIndex].image}
-                  alt={certifications[currentIndex].name}
-                  loading="lazy"
-                  className="h-20 mx-auto mb-3 object-contain transition-opacity duration-300"
-                />
-                <p className="text-sm font-semibold text-gray-900">{certifications[currentIndex].name}</p>
-                <p className="text-xs text-gray-600">{certifications[currentIndex].description}</p>
+    <section className="bg-white py-10 border-t border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 text-center mb-7">
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Trusted Certifications</h2>
+        <p className="text-gray-500 text-sm">Our commitment to quality and authenticity</p>
+      </div>
+      <div style={{ overflow: 'hidden', width: '100%' }}>
+        <div className="cert-track">
+          {items.map((cert, i) => (
+            <div key={i} className="cert-item">
+              <div className="bg-gray-50 rounded-xl p-4 mb-2 hover:bg-green-50 transition-colors flex items-center justify-center" style={{ width: 110, height: 90 }}>
+                <img src={cert.image} alt={cert.name} loading="lazy" className="max-h-16 max-w-full object-contain" />
               </div>
+              <p className="text-xs font-semibold text-gray-800">{cert.name}</p>
+              <p className="text-xs text-gray-500 max-w-[110px] leading-tight">{cert.description}</p>
             </div>
-          </div>
-          
-          {/* Dots Navigation - For reference only */}
-          <div className="flex justify-center mt-6 space-x-2">
-            {certifications.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex ? 'bg-green-700 w-8' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop - Scrolling Logos */}
-        <div className="hidden md:block">
-          <div className="overflow-hidden">
-            <div className="flex animate-scroll space-x-12 items-center justify-center">
-              {/* First set */}
-              {certifications.map((cert, index) => (
-                <div key={`first-${index}`} className="flex-shrink-0 text-center">
-                  <div className="bg-gray-50 rounded-lg p-6 mb-3 hover:bg-green-50 transition-colors">
-                    <img
-                      src={cert.image}
-                      alt={cert.name}
-                      loading="lazy"
-                      className="h-16 mx-auto object-contain"
-                    />
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900">{cert.name}</p>
-                  <p className="text-xs text-gray-600">{cert.description}</p>
-                </div>
-              ))}
-              {/* Second set for seamless loop */}
-              {certifications.map((cert, index) => (
-                <div key={`second-${index}`} className="flex-shrink-0 text-center">
-                  <div className="bg-gray-50 rounded-lg p-6 mb-3 hover:bg-green-50 transition-colors">
-                    <img
-                      src={cert.image}
-                      alt={cert.name}
-                      className="h-16 mx-auto object-contain"
-                    />
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900">{cert.name}</p>
-                  <p className="text-xs text-gray-600">{cert.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
-      
       <style jsx>{`
-        @keyframes scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
+        .cert-track {
+          display: flex;
+          align-items: flex-start;
+          gap: 32px;
+          width: max-content;
+          animation: certScroll 18s linear infinite;
         }
-        
-        .animate-scroll {
-          animation: scroll 20s linear infinite;
+        .cert-track:hover { animation-play-state: paused; }
+        .cert-item {
+          flex-shrink: 0;
+          text-align: center;
+          width: 110px;
         }
-        
-        .animate-scroll:hover {
-          animation-play-state: paused;
+        @keyframes certScroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
         }
       `}</style>
     </section>

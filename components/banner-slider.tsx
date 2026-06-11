@@ -32,22 +32,20 @@ export default function BannerSlider() {
   const next = () => { setCurrent((p) => (p + 1) % banners.length); if (!paused) startTimer(); };
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9' }} data-banner>
+    <section className="banner-section relative w-full overflow-hidden" data-banner>
       {banners.map((src, i) => (
         <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
-          <Image src={src} alt={`Banner ${i + 1}`} fill className="object-cover" priority={i === 0} />
+          <Image src={src} alt={`Banner ${i + 1}`} fill className="object-cover object-center" priority={i === 0} sizes="100vw" />
         </div>
       ))}
 
       {/* View All button */}
       <div className="absolute bottom-12 sm:bottom-10 left-1/2 -translate-x-1/2 z-10">
-        <Link
-          href="/#jaggery"
-          className="px-5 py-2 sm:px-7 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-lg transition-all duration-200"
+        <Link href="/#jaggery"
+          className="px-5 py-2 sm:px-7 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-lg transition-all duration-200 whitespace-nowrap"
           style={{ background: '#c8922a', color: '#fff', letterSpacing: '0.04em' }}
           onMouseEnter={e => (e.currentTarget.style.background = '#e8b84b')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#c8922a')}
-        >
+          onMouseLeave={e => (e.currentTarget.style.background = '#c8922a')}>
           View All Products →
         </Link>
       </div>
@@ -62,27 +60,51 @@ export default function BannerSlider() {
 
       {/* Arrows */}
       <button onClick={prev}
-        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xl z-10 transition">
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl z-10 transition">
         ‹
       </button>
       <button onClick={next}
-        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xl z-10 transition">
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl z-10 transition">
         ›
       </button>
 
       {/* Pause/Play */}
-      <button
-        onClick={() => setPaused(p => !p)}
+      <button onClick={() => setPaused(p => !p)}
         className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-white transition"
-        style={{ background: 'rgba(0,0,0,0.35)' }}
-        title={paused ? 'Play' : 'Pause'}
-      >
+        style={{ background: 'rgba(0,0,0,0.35)' }} title={paused ? 'Play' : 'Pause'}>
         {paused ? (
           <svg width="13" height="14" viewBox="0 0 13 14" fill="white"><polygon points="1,0 12,7 1,14"/></svg>
         ) : (
           <svg width="11" height="13" viewBox="0 0 11 13" fill="white"><rect x="0" y="0" width="3.5" height="13"/><rect x="6.5" y="0" width="3.5" height="13"/></svg>
         )}
       </button>
+
+      <style jsx>{`
+        .banner-section {
+          aspect-ratio: 16/9;
+        }
+        @media (min-width: 1024px) {
+          .banner-section {
+            aspect-ratio: auto;
+            height: 560px;
+          }
+        }
+        @media (min-width: 1280px) {
+          .banner-section {
+            height: 640px;
+          }
+        }
+        @media (min-width: 1536px) {
+          .banner-section {
+            height: 720px;
+          }
+        }
+        @media (min-width: 1920px) {
+          .banner-section {
+            height: 800px;
+          }
+        }
+      `}</style>
     </section>
   );
 }

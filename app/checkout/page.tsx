@@ -4,12 +4,16 @@ import { useStore } from '@/lib/store';
 import { AdminProduct } from '@/lib/admin-store';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
 declare global {
   interface Window { Razorpay: any; }
 }
+
+const INDIAN_STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Puducherry'];
+
+const emptyAddress = { address: '', city: '', state: '', pincode: '' };
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -21,18 +25,23 @@ export default function CheckoutPage() {
     lastName: user?.name?.split(' ')[1] || '',
     email: user?.email || '',
     phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
   });
+
+  const [deliveryAddress, setDeliveryAddress] = useState({ ...emptyAddress });
+  const [billingAddress, setBillingAddress] = useState({ ...emptyAddress });
+  const [sameAsDelivery, setSameAsDelivery] = useState(true);
+
+  // GST
+  const [wantsGst, setWantsGst] = useState(false);
+  const [gstNumber, setGstNumber] = useState('');
+  const [gstCompany, setGstCompany] = useState('');
+  const [gstError, setGstError] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Settings
   const [settings, setSettings] = useState({ freeShippingThreshold: 500, shippingCharge: 50, taxPercent: 5 });
 
-  // Coupon state
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; message: string } | null>(null);
   const [couponError, setCouponError] = useState('');
@@ -50,14 +59,12 @@ export default function CheckoutPage() {
     });
   }, []);
 
-  // Fix: redirect in useEffect, not during render
   useEffect(() => {
     if (!isLoggedIn) router.push('/login');
   }, [isLoggedIn, router]);
 
   if (!isLoggedIn) return null;
 
-  // Calculate subtotal using admin store products
   const cartTotal = cart.reduce((total, item) => {
     const product = products.find((p) => p.id === item.productId);
     const variation = product?.variations.find((v) => v.id === item.variationId);
@@ -69,9 +76,19 @@ export default function CheckoutPage() {
   const tax = Math.round(cartTotal * (settings.taxPercent / 100));
   const total = cartTotal - discount + shipping + tax;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDeliveryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setDeliveryAddress(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setBillingAddress(prev => ({ ...prev, [name]: value }));
   };
 
   const handleApplyCoupon = async () => {
@@ -98,8 +115,10 @@ export default function CheckoutPage() {
     setCouponInput('');
   };
 
+  const validateGst = (val: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(val);
+
   const validateForm = () => {
-    if (!formData.firstName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
+    if (!formData.firstName || !formData.email || !formData.phone || !deliveryAddress.address || !deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.pincode) {
       setError('Please fill in all required fields');
       return false;
     }
@@ -107,8 +126,22 @@ export default function CheckoutPage() {
       setError('Please enter a valid 10-digit phone number');
       return false;
     }
-    if (!/^\d{6}$/.test(formData.pincode)) {
-      setError('Please enter a valid 6-digit pincode');
+    if (!/^\d{6}$/.test(deliveryAddress.pincode)) {
+      setError('Please enter a valid 6-digit pincode for delivery address');
+      return false;
+    }
+    if (!sameAsDelivery) {
+      if (!billingAddress.address || !billingAddress.city || !billingAddress.state || !billingAddress.pincode) {
+        setError('Please fill in all billing address fields');
+        return false;
+      }
+      if (!/^\d{6}$/.test(billingAddress.pincode)) {
+        setError('Please enter a valid 6-digit pincode for billing address');
+        return false;
+      }
+    }
+    if (wantsGst && gstNumber && !validateGst(gstNumber)) {
+      setGstError('Invalid GST number format (e.g. 22AAAAA0000A1Z5)');
       return false;
     }
     return true;
@@ -140,6 +173,8 @@ export default function CheckoutPage() {
       const { orderId, error: orderError } = await res.json();
       if (orderError) throw new Error(orderError);
 
+      const effectiveBilling = sameAsDelivery ? deliveryAddress : billingAddress;
+
       const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: total * 100,
@@ -158,6 +193,7 @@ export default function CheckoutPage() {
               const variation = product?.variations.find((v) => v.id === item.variationId);
               return { productId: item.productId, variationId: item.variationId, quantity: item.quantity, price: variation?.price || 0 };
             });
+            const shippingAddressStr = `${deliveryAddress.address}, ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.pincode}`;
             const orderData = {
               id: Math.random().toString(),
               userId: user?.id || '',
@@ -168,22 +204,23 @@ export default function CheckoutPage() {
               razorpayPaymentId: response.razorpay_payment_id || '',
               email: formData.email,
               phone: formData.phone,
-              shippingAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.pincode}`,
+              shippingAddress: shippingAddressStr,
               createdAt: new Date(),
             };
             addOrder(orderData);
             clearCart();
-            // Increment coupon usage if applied
             if (appliedCoupon) {
               fetch('/api/coupon-use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
             }
-            // Save order to DB permanently
             fetch('/api/orders-save', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 ...orderData,
                 customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                billingAddress: `${effectiveBilling.address}, ${effectiveBilling.city}, ${effectiveBilling.state} ${effectiveBilling.pincode}`,
+                gstNumber: wantsGst ? gstNumber : '',
+                gstCompany: wantsGst ? gstCompany : '',
                 items: orderItems.map((item) => {
                   const product = products.find((p) => p.id === item.productId);
                   const variation = product?.variations.find((v) => v.id === item.variationId);
@@ -192,7 +229,6 @@ export default function CheckoutPage() {
                 subtotal: cartTotal, discount, shipping, tax,
               }),
             });
-            // Send order confirmation email via server API
             fetch('/api/send-order-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -211,7 +247,7 @@ export default function CheckoutPage() {
                 shipping,
                 tax,
                 total,
-                shippingAddress: orderData.shippingAddress,
+                shippingAddress: shippingAddressStr,
                 createdAt: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
               }),
             });
@@ -227,6 +263,8 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  const inputCls = 'px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700 w-full';
 
   if (cart.length === 0) {
     return (
@@ -251,7 +289,7 @@ export default function CheckoutPage() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-5">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
@@ -259,23 +297,20 @@ export default function CheckoutPage() {
                 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">{error}</div>
               )}
 
-              {/* Delivery Address */}
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <MapPin size={20} /> Delivery Address
+              {/* Contact Info */}
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Phone size={18} /> Contact Information
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
                   <input type="text" name="firstName" placeholder="First Name *" value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
+                    onChange={handleInputChange} className={inputCls} />
                   <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
+                    onChange={handleInputChange} className={inputCls} />
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <input type="email" name="email" placeholder="Email Address *" value={formData.email}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
+                    onChange={handleInputChange} className={inputCls} />
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-3 focus-within:border-green-700">
                     <Phone size={18} className="text-gray-400 flex-shrink-0" />
                     <input type="tel" name="phone" placeholder="Phone (10 digits) *" value={formData.phone}
@@ -283,29 +318,84 @@ export default function CheckoutPage() {
                       className="flex-1 outline-none" />
                   </div>
                 </div>
-                <textarea name="address" placeholder="Street Address *" value={formData.address}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-                  rows={3}
+              </div>
+
+              {/* Delivery Address */}
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <MapPin size={18} /> Delivery Address
+                </h2>
+                <textarea name="address" placeholder="Street Address *" value={deliveryAddress.address}
+                  onChange={handleDeliveryChange} rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700 mb-4 resize-none" />
                 <div className="grid sm:grid-cols-3 gap-4">
-                  <input type="text" name="city" placeholder="City *" value={formData.city}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
-                  <select name="state" value={formData.state} onChange={handleInputChange}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700">
+                  <input type="text" name="city" placeholder="City *" value={deliveryAddress.city}
+                    onChange={handleDeliveryChange} className={inputCls} />
+                  <select name="state" value={deliveryAddress.state} onChange={handleDeliveryChange}
+                    className={inputCls}>
                     <option value="">Select State *</option>
-                    {['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'Delhi', 'Gujarat', 'Rajasthan', 'West Bengal', 'Kerala'].map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <input type="text" name="pincode" placeholder="Pincode *" value={formData.pincode}
-                    onChange={handleInputChange} maxLength={6}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700" />
+                  <input type="text" name="pincode" placeholder="Pincode *" value={deliveryAddress.pincode}
+                    onChange={handleDeliveryChange} maxLength={6} className={inputCls} />
                 </div>
               </div>
 
+              {/* Billing Address */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Building2 size={18} /> Billing Address
+                  </h2>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={sameAsDelivery} onChange={e => setSameAsDelivery(e.target.checked)}
+                      className="w-4 h-4 accent-green-700 cursor-pointer" />
+                    <span className="text-sm text-gray-600">Same as delivery address</span>
+                  </label>
+                </div>
+                {!sameAsDelivery && (
+                  <>
+                    <textarea name="address" placeholder="Billing Street Address *" value={billingAddress.address}
+                      onChange={handleBillingChange} rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700 mb-4 resize-none" />
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <input type="text" name="city" placeholder="City *" value={billingAddress.city}
+                        onChange={handleBillingChange} className={inputCls} />
+                      <select name="state" value={billingAddress.state} onChange={handleBillingChange}
+                        className={inputCls}>
+                        <option value="">Select State *</option>
+                        {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <input type="text" name="pincode" placeholder="Pincode *" value={billingAddress.pincode}
+                        onChange={handleBillingChange} maxLength={6} className={inputCls} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* GST Details (optional) */}
+              <div className="mb-6 border border-gray-200 rounded-lg p-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none mb-3">
+                  <input type="checkbox" checked={wantsGst} onChange={e => { setWantsGst(e.target.checked); setGstError(''); setGstNumber(''); setGstCompany(''); }}
+                    className="w-4 h-4 accent-green-700 cursor-pointer" />
+                  <span className="text-sm font-semibold text-gray-700">Add GST details (optional, for business purchases)</span>
+                </label>
+                {wantsGst && (
+                  <div className="grid sm:grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <input type="text" placeholder="GST Number (e.g. 22AAAAA0000A1Z5)" value={gstNumber}
+                        onChange={e => { setGstNumber(e.target.value.toUpperCase()); setGstError(''); }}
+                        maxLength={15} className={inputCls} />
+                      {gstError && <p className="text-xs text-red-500 mt-1">{gstError}</p>}
+                    </div>
+                    <input type="text" placeholder="Company / Business Name" value={gstCompany}
+                      onChange={e => setGstCompany(e.target.value)} className={inputCls} />
+                  </div>
+                )}
+              </div>
+
               {/* Shipping Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3 items-start mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3 items-start mb-4">
                 <Truck size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-blue-900">Free delivery on orders above ₹{settings.freeShippingThreshold}</p>
@@ -432,6 +522,13 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating WhatsApp button */}
+      <a href="https://wa.me/918748899100" target="_blank" rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition hover:scale-110"
+        style={{ background: '#25d366' }} title="Chat on WhatsApp">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+      </a>
     </main>
   );
 }
