@@ -117,7 +117,10 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                      style={{ background: p.category === 'Sweeteners' ? '#1e4a2a18' : '#c8922a18', color: p.category === 'Sweeteners' ? '#1e4a2a' : '#c8922a' }}>
+                      style={{
+                        background: p.category === 'Sweeteners' ? '#1e4a2a18' : p.category === 'New' ? '#dcfce718' : '#c8922a18',
+                        color: p.category === 'Sweeteners' ? '#1e4a2a' : p.category === 'New' ? '#15803d' : '#c8922a'
+                      }}>
                       {p.category}
                     </span>
                   </td>
@@ -171,6 +174,7 @@ export default function AdminProductsPage() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700">
                   <option>Sweeteners</option>
                   <option>Combo Deals</option>
+                  <option>New</option>
                 </select>
               </div>
               <div>

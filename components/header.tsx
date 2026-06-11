@@ -132,12 +132,20 @@ export default function Header() {
                     Sweeteners
                   </Link>
                   <Link href="/combo-deals" className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
-                    style={{ color: '#2e2e2e' }}
+                    style={{ color: '#2e2e2e', borderBottom: '1px solid #f0ece6' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; e.currentTarget.style.color = '#1e4a2a'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2e2e'; }}
                     onClick={() => setProductsOpen(false)}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c8922a', display: 'inline-block', flexShrink: 0 }} />
                     Combo Deals
+                  </Link>
+                  <Link href="/new" className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
+                    style={{ color: '#2e2e2e' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; e.currentTarget.style.color = '#1e4a2a'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2e2e'; }}
+                    onClick={() => setProductsOpen(false)}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#15803d', display: 'inline-block', flexShrink: 0 }} />
+                    New
                   </Link>
                 </div>
               )}
@@ -298,6 +306,9 @@ export default function Header() {
                   </Link>
                   <Link href="/combo-deals" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c8922a', display: 'inline-block' }} />Combo Deals
+                  </Link>
+                  <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#15803d', display: 'inline-block' }} />New
                   </Link>
                 </div>
               )}

@@ -461,7 +461,7 @@ function CustomerReviewsCarousel() {
 }
 
 export default function Home() {
-  const [activeCategory, setActiveCategory] = useState<'Sweeteners' | 'Combo Deals'>('Sweeteners');
+  const [activeCategory, setActiveCategory] = useState<'Sweeteners' | 'Combo Deals' | 'New'>('Sweeteners');
   const [mounted, setMounted] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
@@ -469,6 +469,7 @@ export default function Home() {
     setMounted(true);
     const params = new URLSearchParams(window.location.search);
     if (params.get('tab') === 'combo') setActiveCategory('Combo Deals');
+    if (params.get('tab') === 'new') setActiveCategory('New');
     fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
       if (products) setAllProducts(products);
     });
@@ -476,7 +477,8 @@ export default function Home() {
 
   const sweeteners = allProducts.filter((p: any) => p.category === 'Sweeteners');
   const combos = allProducts.filter((p: any) => p.category === 'Combo Deals');
-  const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : combos;
+  const newProducts = allProducts.filter((p: any) => p.category === 'New');
+  const displayProducts = activeCategory === 'Sweeteners' ? sweeteners : activeCategory === 'Combo Deals' ? combos : newProducts;
 
   return (
     <>
@@ -580,7 +582,7 @@ export default function Home() {
           {/* Category Tabs */}
           <div className="flex justify-center mb-10">
             <div className="flex bg-gray-100 rounded-full p-1 gap-1">
-              {(['Sweeteners', 'Combo Deals'] as const).map((cat) => (
+              {(['Sweeteners', 'Combo Deals', 'New'] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}

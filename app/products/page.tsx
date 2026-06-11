@@ -5,7 +5,7 @@ import ProductCard from '@/components/product-card';
 import CartDrawer from '@/components/cart-drawer';
 import ProductsSidebar, { FilterState } from '@/components/products-sidebar';
 
-const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals'];
+const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals', 'New'];
 const PRICE_MAX = 1000;
 
 export default function AllProductsPage() {

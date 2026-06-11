@@ -8,9 +8,9 @@ import ProductsSidebar, { FilterState, SortOption } from '@/components/products-
 const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals', 'New'];
 const PRICE_MAX = 1000;
 
-export default function ComboDealsPage() {
+export default function NewProductsPage() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [filters, setFilters] = useState<FilterState>({ categories: ['Combo Deals'], maxPrice: PRICE_MAX, sort: 'default' });
+  const [filters, setFilters] = useState<FilterState>({ categories: ['New'], maxPrice: PRICE_MAX, sort: 'default' });
 
   useEffect(() => {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setAllProducts(p); });
@@ -36,11 +36,11 @@ export default function ComboDealsPage() {
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 sm:mb-4">
               <a href="/" className="hover:text-green-700 transition">Home</a>
               <span>/</span>
-              <span className="text-gray-900 font-medium">Combo Deals</span>
+              <span className="text-gray-900 font-medium">New</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Combo Deals</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">New Arrivals</h1>
             <p className="text-sm sm:text-base text-gray-600 max-w-xl">
-              Get more, save more. Handpicked jaggery combo bundles for the best value.
+              Discover our latest organic jaggery products and fresh arrivals.
             </p>
           </div>
         </div>
