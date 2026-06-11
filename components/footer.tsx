@@ -138,7 +138,7 @@ export default function Footer() {
                 <span style={{ color: '#c8922a', marginTop: 2 }}>📍</span>
                 <div>
                   <p className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Location</p>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>Mandya, Karnataka, India</p>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>Bengaluru, Karnataka, India</p>
                 </div>
               </div>
               <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer"
