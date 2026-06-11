@@ -5,6 +5,8 @@ import { AdminProduct } from '@/lib/admin-store';
 import { Pencil, Trash2, Plus, X, Check, Upload, ImageIcon } from 'lucide-react';
 import { uploadImage } from '@/lib/upload';
 
+const DEFAULT_CATEGORIES = ['Sweeteners', 'Combo Deals', 'New'];
+
 const EMPTY: Omit<AdminProduct, 'id' | 'createdAt'> = {
   name: '', description: '', category: 'Sweeteners', image: '', images: [],
   rating: 5, reviewCount: 0,
@@ -19,10 +21,27 @@ export default function AdminProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [imgTab, setImgTab] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [newCatInput, setNewCatInput] = useState('');
 
   useEffect(() => {
-    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => {
+      if (p) {
+        setProducts(p);
+        // collect any extra categories from existing products
+        const existing = Array.from(new Set(p.map((pr: any) => pr.category as string)));
+        setCategories(prev => Array.from(new Set([...prev, ...existing])));
+      }
+    });
   }, []);
+
+  const addCategory = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setCategories(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
+    setForm(f => ({ ...f, category: trimmed }));
+    setNewCatInput('');
+  };
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
   const openEdit = (p: AdminProduct) => {
@@ -170,12 +189,46 @@ export default function AdminProductsPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700">
-                  <option>Sweeteners</option>
-                  <option>Combo Deals</option>
-                  <option>New</option>
-                </select>
+                {/* Existing category chips */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {categories.map(cat => (
+                    <button key={cat} type="button"
+                      onClick={() => setForm(f => ({ ...f, category: cat }))}
+                      className="px-3 py-1 rounded-full text-xs font-semibold border transition"
+                      style={{
+                        background: form.category === cat ? '#1e4a2a' : '#fff',
+                        color: form.category === cat ? '#fff' : '#1e4a2a',
+                        borderColor: '#1e4a2a',
+                      }}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                {/* Add new category */}
+                <div className="flex gap-2 items-center">
+                  <input
+                    value={newCatInput}
+                    onChange={e => setNewCatInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory(newCatInput); } }}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
+                    placeholder="Type new category & press Enter" />
+                  <button type="button" onClick={() => addCategory(newCatInput)}
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-white transition"
+                    style={{ background: '#1e4a2a' }}>
+                    + Add
+                  </button>
+                </div>
+                {form.category && (
+                  <p className="text-xs mt-1.5" style={{ color: '#888' }}>
+                    Selected: <strong style={{ color: '#1e4a2a' }}>{form.category}</strong>
+                    {' · '}
+                    <a href={`/products?category=${encodeURIComponent(form.category)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="underline" style={{ color: '#c8922a' }}>
+                      View page →
+                    </a>
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-2">Product Image</label>
