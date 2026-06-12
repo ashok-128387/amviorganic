@@ -21,8 +21,8 @@ function CertificationCarousel() {
     { name: 'ROCO', image: '/Certification logo/Certification logo/ROCO Logo (3).jpg', description: 'Registered Organic Certifying Organization' },
   ];
 
-  // Repeat 4x so 4 items always visible and loop is seamless
-  const items = [...certifications, ...certifications, ...certifications, ...certifications];
+  // Duplicate once — scroll through one full set then seamlessly loop
+  const items = [...certifications, ...certifications];
 
   return (
     <section className="bg-white py-10 border-t border-gray-100">
@@ -30,37 +30,59 @@ function CertificationCarousel() {
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Trusted Certifications</h2>
         <p className="text-gray-500 text-sm">Our commitment to quality and authenticity</p>
       </div>
-      <div style={{ overflow: 'hidden', width: '100%' }}>
+      {/* Outer: fixed width showing exactly 4 items */}
+      <div className="cert-outer">
         <div className="cert-track">
           {items.map((cert, i) => (
             <div key={i} className="cert-item">
-              <div className="bg-gray-50 rounded-xl p-4 mb-2 hover:bg-green-50 transition-colors flex items-center justify-center" style={{ width: 130, height: 100 }}>
+              <div className="cert-box">
                 <img src={cert.image} alt={cert.name} loading="lazy" className="max-h-16 max-w-full object-contain" />
               </div>
-              <p className="text-xs font-semibold text-gray-800">{cert.name}</p>
-              <p className="text-xs text-gray-500 leading-tight" style={{ maxWidth: 130 }}>{cert.description}</p>
+              <p className="text-xs font-semibold text-gray-800 mt-2">{cert.name}</p>
+              <p className="text-xs text-gray-500 leading-tight mt-0.5">{cert.description}</p>
             </div>
           ))}
         </div>
       </div>
       <style jsx>{`
+        .cert-outer {
+          max-width: 900px;
+          margin: 0 auto;
+          overflow: hidden;
+          padding: 0 16px;
+        }
         .cert-track {
           display: flex;
-          align-items: flex-start;
-          gap: 40px;
+          gap: 0;
           width: max-content;
-          padding: 0 20px;
-          animation: certScroll 20s linear infinite;
+          animation: certScroll 12s linear infinite;
         }
-        .cert-track:hover { animation-play-state: paused; }
+        .cert-track:hover {
+          animation-play-state: paused;
+        }
         .cert-item {
           flex-shrink: 0;
+          width: 25%;
+          /* 25% of max-content = each of 4 items visible */
+          width: calc(900px / 4);
           text-align: center;
-          width: 130px;
+          padding: 0 12px;
+        }
+        .cert-box {
+          background: #f9fafb;
+          border-radius: 12px;
+          height: 96px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+        .cert-box:hover {
+          background: #f0faf2;
         }
         @keyframes certScroll {
           0%   { transform: translateX(0); }
-          100% { transform: translateX(-25%); }
+          100% { transform: translateX(-50%); }
         }
       `}</style>
     </section>
