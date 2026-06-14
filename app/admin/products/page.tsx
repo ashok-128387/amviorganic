@@ -21,6 +21,7 @@ export default function AdminProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [imgTab, setImgTab] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const carouselRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [newCatInput, setNewCatInput] = useState('');
 
@@ -62,6 +63,27 @@ export default function AdminProductsPage() {
     if (!files.length) return;
     const urls = await Promise.all(files.map(uploadImage));
     if (urls.length) setForm(f => ({ ...f, image: urls[0], images: urls }));
+  };
+
+  const handleCarouselUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadImage(file);
+    if (!url) return;
+    setForm(f => {
+      const imgs = [...(f.images.length ? f.images : Array(5).fill(''))];
+      while (imgs.length < 5) imgs.push('');
+      imgs[index] = url;
+      return { ...f, images: imgs, image: imgs.find(u => u) || f.image };
+    });
+  };
+
+  const removeCarouselImage = (index: number) => {
+    setForm(f => {
+      const imgs = [...f.images];
+      imgs[index] = '';
+      return { ...f, images: imgs, image: imgs.find(u => u) || '' };
+    });
   };
 
   const handleSave = async () => {
@@ -243,25 +265,45 @@ export default function AdminProductsPage() {
                 </div>
                 {imgTab === 'upload' ? (
                   <div>
-                    <div onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-green-600 hover:bg-green-50 transition">
-                      {form.image ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <img src={form.image} className="h-24 rounded-lg object-contain mx-auto" alt="preview" />
-                          <p className="text-xs text-gray-500">Click to change</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 py-2">
-                          <Upload size={28} className="text-gray-300" />
-                          <p className="text-sm font-semibold text-gray-600">Click to upload</p>
-                          <p className="text-xs text-gray-400">PNG, JPG, WEBP</p>
-                        </div>
-                      )}
-                    </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    <div className="mt-3">
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Additional Images (optional)</label>
-                      <input type="file" accept="image/*" multiple className="text-xs text-gray-500 w-full" onChange={handleMultiFileChange} />
+                    <p className="text-xs text-gray-500 mb-3">Slot 1 is the <strong>main image</strong>. Slots 2–5 are carousel images shown on the product page.</p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const imgUrl = form.images[i] || '';
+                        const isMain = i === 0;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-1">
+                            <div
+                              onClick={() => carouselRefs.current[i]?.click()}
+                              className="w-full aspect-square rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition"
+                              style={{ borderColor: imgUrl ? '#1e4a2a' : '#e5e7eb', background: imgUrl ? '#f0faf2' : '#fafafa' }}
+                            >
+                              {imgUrl ? (
+                                <img src={imgUrl} className="w-full h-full object-cover rounded-xl" alt={`Image ${i + 1}`} />
+                              ) : (
+                                <div className="flex flex-col items-center gap-1 p-1">
+                                  <Upload size={18} className="text-gray-300" />
+                                  <p className="text-xs text-gray-400 text-center leading-tight">Upload</p>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 w-full justify-between px-0.5">
+                              <span className="text-xs font-semibold" style={{ color: isMain ? '#1e4a2a' : '#888' }}>
+                                {isMain ? 'Main' : `#${i + 1}`}
+                              </span>
+                              {imgUrl && (
+                                <button onClick={() => removeCarouselImage(i)} className="text-red-400 hover:text-red-600">
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              ref={el => { carouselRefs.current[i] = el; }}
+                              type="file" accept="image/*" className="hidden"
+                              onChange={e => handleCarouselUpload(e, i)}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
