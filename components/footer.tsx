@@ -12,7 +12,7 @@ export default function Footer() {
           {/* Brand column */}
           <div className="md:col-span-3">
             <div className="flex items-center gap-3 mb-4">
-              <img src="/logo-reverse.png" alt="AMVI Organics"
+              <img src="/logo-footer.png" alt="AMVI Organics"
                 style={{ height: 80, width: 'auto', maxWidth: 200, objectFit: 'contain', display: 'block' }} loading="lazy" />
               <p className="font-extrabold tracking-wide" style={{ color: '#e8b84b', fontSize: '1.1rem' }}>Amvi Organics</p>
             </div>
