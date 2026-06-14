@@ -86,22 +86,22 @@ export default function BannerSlider() {
         @media (min-width: 768px) {
           .banner-section {
             aspect-ratio: auto;
-            height: 300px;
+            height: 260px;
           }
         }
         @media (min-width: 1024px) {
           .banner-section {
-            height: 380px;
+            height: 320px;
           }
         }
         @media (min-width: 1280px) {
           .banner-section {
-            height: 480px;
+            height: 380px;
           }
         }
         @media (min-width: 1536px) {
           .banner-section {
-            height: 560px;
+            height: 420px;
           }
         }
       `}</style>

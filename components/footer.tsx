@@ -12,8 +12,9 @@ export default function Footer() {
           {/* Brand column */}
           <div className="md:col-span-3">
             <div className="mb-4">
-              <img src="/Product images for website/Product images for website/bg .png" alt="AMVI Organics"
+              <img src="/logo-reverse.png" alt="AMVI Organics"
                 style={{ height: 80, width: 'auto', maxWidth: 220, objectFit: 'contain', display: 'block' }} loading="lazy" />
+              <p className="font-extrabold tracking-wide mt-2" style={{ color: '#e8b84b', fontSize: '1.1rem' }}>Amvi Organics</p>
             </div>
             <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.65)' }}>
               Pure, certified organic jaggery — sourced directly from sugarcane farms and delivered to your doorstep.

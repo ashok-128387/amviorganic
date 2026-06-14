@@ -81,27 +81,31 @@ export default function Header() {
     router.push(href);
   };
 
-  const linkStyle = { color: '#f5f0e8' };
+  const linkStyle = { color: '#1e4a2a' };
   const linkHover = (e: React.MouseEvent<HTMLElement>, enter: boolean) => {
-    (e.currentTarget as HTMLElement).style.color = enter ? '#e8b84b' : '#f5f0e8';
-    (e.currentTarget as HTMLElement).style.background = enter ? 'rgba(232,184,75,0.15)' : 'transparent';
+    (e.currentTarget as HTMLElement).style.color = enter ? '#c8922a' : '#1e4a2a';
+    (e.currentTarget as HTMLElement).style.background = enter ? 'rgba(200,146,42,0.08)' : 'transparent';
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full" style={{ background: '#1e4a2a', borderBottom: '1px solid rgba(200,146,42,0.3)', boxShadow: '0 2px 12px rgba(0,0,0,0.18)' }}>
+    <header className="sticky top-0 z-50 w-full" style={{ background: '#fff', borderBottom: '1px solid #e8e3db', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
       <div className="max-w-7xl mx-auto px-4 py-2">
         <div className="flex items-center justify-between gap-3">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <Image
-              src="/Product images for website/Product images for website/bg .png"
+              src="/logo.png"
               alt="AMVI Organics"
-              width={220} height={88}
+              width={180} height={72}
               className="object-contain"
-              style={{ height: 72, width: 'auto', maxWidth: 220 }}
+              style={{ height: 64, width: 'auto', maxWidth: 180 }}
               priority
             />
+            <div className="hidden sm:block leading-tight">
+              <p className="font-extrabold tracking-wide" style={{ color: '#1e4a2a', fontSize: '1.1rem' }}>Amvi Organics</p>
+              <p className="tracking-widest" style={{ color: '#c8922a', fontSize: '0.6rem' }}>NATURE&apos;S TRUST, DELIVERED</p>
+            </div>
           </Link>
 
           {/* Desktop Nav */}
@@ -111,7 +115,7 @@ export default function Header() {
 
             <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
               <button className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
-                style={{ color: productsOpen ? '#e8b84b' : '#f5f0e8', background: productsOpen ? 'rgba(232,184,75,0.15)' : 'transparent' }}>
+                style={{ color: productsOpen ? '#c8922a' : '#1e4a2a', background: productsOpen ? 'rgba(200,146,42,0.08)' : 'transparent' }}>
                 Our Products
                 <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: productsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </button>
@@ -166,8 +170,8 @@ export default function Header() {
             {/* Search */}
             <div className="relative" ref={searchRef}>
               <button onClick={() => setSearchOpen(o => !o)} className="p-2 rounded-md transition-colors duration-200" style={linkStyle}
-                onMouseEnter={e => (e.currentTarget.style.color = '#e8b84b')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#f5f0e8')}>
+                onMouseEnter={e => (e.currentTarget.style.color = '#c8922a')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#1e4a2a')}>
                 <Search size={20} />
               </button>
 
@@ -239,8 +243,8 @@ export default function Header() {
             </div>
 
             <Link href="/wishlist" className="relative p-2 rounded-md transition-colors duration-200" style={linkStyle}
-              onMouseEnter={e => (e.currentTarget.style.color = '#e8b84b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#f5f0e8')}>
+              onMouseEnter={e => (e.currentTarget.style.color = '#c8922a')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#1e4a2a')}>
               <Heart size={20} />
               {wishlist.length > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#c8922a', fontSize: '0.6rem' }}>
@@ -250,8 +254,8 @@ export default function Header() {
             </Link>
 
             <button onClick={() => setCartOpen(true)} className="relative p-2 rounded-md transition-colors duration-200" style={linkStyle}
-              onMouseEnter={e => (e.currentTarget.style.color = '#e8b84b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#f5f0e8')}>
+              onMouseEnter={e => (e.currentTarget.style.color = '#c8922a')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#1e4a2a')}>
               <ShoppingCart size={20} />
               {cart.length > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#c8922a', fontSize: '0.6rem' }}>
@@ -262,10 +266,10 @@ export default function Header() {
 
             {isLoggedIn ? (
               <div className="hidden sm:flex items-center gap-2 ml-1">
-                <span className="text-xs" style={{ color: '#f5f0e8' }}>{user?.name}</span>
-                <button onClick={logout} className="p-2 rounded-md" style={{ color: '#f5f0e8' }}
+                <span className="text-xs" style={{ color: '#1e4a2a' }}>{user?.name}</span>
+                <button onClick={logout} className="p-2 rounded-md" style={{ color: '#1e4a2a' }}
                   onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#f5f0e8')} title="Logout">
+                  onMouseLeave={e => (e.currentTarget.style.color = '#1e4a2a')} title="Logout">
                   <LogOut size={18} />
                 </button>
               </div>
@@ -276,7 +280,7 @@ export default function Header() {
                 onMouseLeave={e => (e.currentTarget.style.background = '#c8922a')}>Login</Link>
             )}
 
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 ml-1 rounded-md" style={{ color: '#f5f0e8' }}>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 ml-1 rounded-md" style={{ color: '#1e4a2a' }}>
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
@@ -284,34 +288,34 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <nav className="md:hidden mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(200,146,42,0.3)' }}>
+          <nav className="md:hidden mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #e8e3db' }}>
             {/* Mobile Search */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <Search size={15} style={{ color: '#e8b84b' }} />
-              <input type="text" placeholder="Search..." className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#f5f0e8' }}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2" style={{ background: '#f5f2ed' }}>
+              <Search size={15} style={{ color: '#1e4a2a' }} />
+              <input type="text" placeholder="Search..." className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#1e4a2a' }}
                 onKeyDown={e => { if (e.key === 'Enter') { const q = (e.target as HTMLInputElement).value.trim(); if (q) { const r = products.find(p => p.name.toLowerCase().includes(q.toLowerCase())); if (r) router.push(`/product/${r.id}`); setMobileMenuOpen(false); } } }} />
             </div>
 
-            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#f5f0e8' }}>Home</Link>
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#1e4a2a' }}>Home</Link>
 
             <div>
               <button onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#f5f0e8' }}>
+                className="flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#1e4a2a' }}>
                 Our Products
                 <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: mobileProductsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </button>
               {mobileProductsOpen && (
                 <div className="ml-4 mt-1 space-y-1">
-                  <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-semibold" style={{ color: '#e8b84b' }}>All Products</Link>
-                  <Link href="/sweeteners" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#f5f0e8' }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#e8b84b', display: 'inline-block' }} />Sweeteners
+                  <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-semibold" style={{ color: '#1e4a2a' }}>All Products</Link>
+                  <Link href="/sweeteners" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#1e4a2a', display: 'inline-block' }} />Sweeteners
                   </Link>
-                  <Link href="/combo-deals" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#f5f0e8' }}>
+                  <Link href="/combo-deals" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c8922a', display: 'inline-block' }} />Combo Deals
                   </Link>
                   {hasNew && (
-                    <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#f5f0e8' }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />New
+                    <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#15803d', display: 'inline-block' }} />New
                     </Link>
                   )}
                 </div>
@@ -320,12 +324,12 @@ export default function Header() {
 
             {[{ label: 'Our Story', href: '/our-story' }, { label: 'Our Process', href: '/our-process' },
               { label: 'Blog', href: '/blog' }, { label: 'FAQs', href: '/faqs' }, { label: 'Contact', href: '/contact' }].map(({ label, href }) => (
-              <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#f5f0e8' }}>{label}</Link>
+              <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium" style={{ color: '#1e4a2a' }}>{label}</Link>
             ))}
-            <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#f5f0e8' }}>Wishlist</Link>
+            <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>Wishlist</Link>
             {isLoggedIn ? (
               <>
-                <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#f5f0e8' }}>My Orders</Link>
+                <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>My Orders</Link>
                 <button onClick={logout} className="block px-3 py-2 rounded-md text-sm w-full text-left" style={{ color: '#f87171' }}>Logout</button>
               </>
             ) : (
