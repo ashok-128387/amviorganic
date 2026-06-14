@@ -46,8 +46,11 @@ export default function AdminProductsPage() {
 
   const openAdd = () => { setForm({ ...EMPTY }); setEditId(null); setImgTab('upload'); setShowForm(true); };
   const openEdit = (p: AdminProduct) => {
-    setForm({ name: p.name, description: p.description, category: p.category, image: p.image, images: p.images, rating: p.rating, reviewCount: p.reviewCount, variations: p.variations });
-    setEditId(p.id); setImgTab(p.image?.startsWith('data:') ? 'upload' : 'url');
+    // Pad images array to 5 slots, use main image as first if images is empty
+    const existingImages = p.images?.length ? [...p.images] : [p.image || ''];
+    while (existingImages.length < 5) existingImages.push('');
+    setForm({ name: p.name, description: p.description, category: p.category, image: p.image, images: existingImages, rating: p.rating, reviewCount: p.reviewCount, variations: p.variations });
+    setEditId(p.id); setImgTab('upload');
     setShowForm(true);
   };
 
