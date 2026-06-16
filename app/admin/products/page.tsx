@@ -206,7 +206,7 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {products.map(p => (
+              {products.map((p, i) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-3">
                     {p.image ? (
