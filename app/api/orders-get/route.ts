@@ -16,8 +16,10 @@ export async function GET(req: NextRequest) {
       email: r.email, phone: r.phone, items: JSON.parse(r.items as string),
       subtotal: r.subtotal, discount: r.discount, shipping: r.shipping,
       tax: r.tax, total: r.total, status: r.status,
-      shippingAddress: r.shipping_address, trackingId: r.tracking_id,
+      shippingAddress: r.shipping_address, billingAddress: r.billing_address,
+      trackingId: r.tracking_id,
       razorpayOrderId: r.razorpay_order_id, razorpayPaymentId: r.razorpay_payment_id,
+      gstNumber: r.gst_number, gstCompany: r.gst_company,
       createdAt: r.created_at,
     }));
 

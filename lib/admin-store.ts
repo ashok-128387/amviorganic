@@ -4,7 +4,10 @@ import { Product, mockProducts } from './mock-data';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface AdminProduct extends Product {}
+export interface AdminProduct extends Product {
+  sku?: string;
+  sortOrder?: number;
+}
 
 export interface BlogPost {
   id: string;
@@ -36,9 +39,10 @@ export interface AdminOrder {
   email: string;
   phone: string;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  items: { name: string; qty: number; price: number }[];
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  items: { name: string; qty: number; price: number; productId?: string; variationId?: string }[];
   shippingAddress?: string;
+  billingAddress?: string;
   trackingId?: string;
   createdAt: string;
 }

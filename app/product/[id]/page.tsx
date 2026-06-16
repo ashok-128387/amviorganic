@@ -3,7 +3,7 @@
 import CartDrawer from '@/components/cart-drawer';
 import { AdminProduct, useAdminStore } from '@/lib/admin-store';
 import { useStore } from '@/lib/store';
-import { Heart, Copy, ShoppingCart, Pencil } from 'lucide-react';
+import { Heart, Copy, ShoppingCart, Pencil, Star, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -29,9 +29,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
 
   useEffect(() => {
-    fetch('/api/reviews-get').then(r => r.json()).then(({ reviews }) => {
-      if (reviews) setProductReviews(reviews.filter((r: any) => r.productId === id && r.approved));
-    });
+    loadReviews();
     fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
       if (products) setAllProducts(products);
     });
@@ -39,8 +37,76 @@ export default function ProductPage({ params }: ProductPageProps) {
       if (settings?.freeShippingThreshold) setFreeShippingThreshold(Number(settings.freeShippingThreshold));
     });
   }, [id]);
-  const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen } = useStore();
+
+  const loadReviews = () =>
+    fetch('/api/reviews-get').then(r => r.json()).then(({ reviews }) => {
+      if (reviews) setProductReviews(reviews.filter((r: any) => r.productId === id && r.approved));
+    });
+
+  const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen, user, isLoggedIn } = useStore();
   const { adminLoggedIn } = useAdminStore();
+
+  // Check verified purchase status
+  const [canReview, setCanReview] = useState(false);
+  const [reviewerName, setReviewerName] = useState(user?.name || '');
+  useEffect(() => {
+    if (!isLoggedIn || !user?.email) return;
+    fetch(`/api/orders-get?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.json())
+      .then(({ orders: userOrders }) => {
+        if (!userOrders) return;
+        const purchased = userOrders.some((o: any) =>
+          ['pending','processing','shipped','delivered','completed'].includes(o.status) &&
+          o.items?.some((item: any) => item.productId === id)
+        );
+        setCanReview(purchased);
+        // Use billing name from most recent matching order
+        const matchingOrder = userOrders.find((o: any) =>
+          ['pending','processing','shipped','delivered','completed'].includes(o.status) &&
+          o.items?.some((item: any) => item.productId === id)
+        );
+        if (matchingOrder?.customerName) setReviewerName(matchingOrder.customerName);
+        else if (user?.name) setReviewerName(user.name);
+      });
+  }, [isLoggedIn, user, id]);
+
+  // Review form state
+  const [rating, setRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn || !user?.email || !canReview) return;
+    setReviewSubmitting(true);
+    setReviewMessage('');
+    const res = await fetch('/api/review-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: id,
+        productName: product?.name || '',
+        email: user.email,
+        name: reviewerName,
+        rating,
+        title: reviewTitle,
+        comment: reviewComment,
+      }),
+    });
+    const data = await res.json();
+    setReviewSubmitting(false);
+    if (data.success) {
+      setReviewTitle('');
+      setReviewComment('');
+      setRating(5);
+      setReviewMessage('Thank you! Your review has been submitted.');
+      loadReviews();
+    } else {
+      setReviewMessage(data.error || 'Failed to submit review. Please try again.');
+    }
+  };
   const router = useRouter();
   const [editingDesc, setEditingDesc] = useState(false);
   const [editDescValue, setEditDescValue] = useState('');
@@ -63,11 +129,19 @@ export default function ProductPage({ params }: ProductPageProps) {
     setEditingDesc(false);
   };
 
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  useEffect(() => {
+    fetch('/api/categories-get').then(r => r.json()).then(({ categories: c }) => {
+      if (c) setAllCategories(c.map((cat: any) => cat.name));
+    });
+  }, []);
+
   const openAdminEdit = () => {
     if (!product) return;
     setEditForm({
       name: product.name,
       category: product.category,
+      sku: product.sku || '',
       image: product.image,
       variations: product.variations.map((v: any) => ({ ...v })),
     });
@@ -80,6 +154,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       ...product,
       name: editForm.name,
       category: editForm.category,
+      sku: editForm.sku,
       image: editForm.image,
       variations: editForm.variations,
       createdAt: product.createdAt?.toISOString?.() || product.createdAt,
@@ -196,10 +271,15 @@ export default function ProductPage({ params }: ProductPageProps) {
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
                       <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700">
-                        <option>Sweeteners</option>
-                        <option>Combo Deals</option>
+                        {allCategories.map(cat => <option key={cat}>{cat}</option>)}
                       </select>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">SKU</label>
+                    <input value={editForm.sku} onChange={e => setEditForm({ ...editForm, sku: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
+                      placeholder="AMVI-001" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Main Image URL</label>
@@ -332,7 +412,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* SKU + Category inline */}
               <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>SKU: <strong className="text-gray-700">AMVI-{product.id}</strong></span>
+                <span>SKU: <strong className="text-gray-700">{product.sku || `AMVI-${product.id}`}</strong></span>
                 <span className="w-px h-3 bg-gray-200" />
                 <span>Category: <strong className="text-gray-700">{product.category}</strong></span>
               </div>
@@ -434,7 +514,29 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           {/* Tabs */}
           <div className="mt-14 mb-6">
-            <TabsComponent product={product} productReviews={productReviews} adminLoggedIn={adminLoggedIn} editingDesc={editingDesc} setEditingDesc={setEditingDesc} editDescValue={editDescValue} setEditDescValue={setEditDescValue} handleSaveDesc={handleSaveDesc} />
+            <TabsComponent
+            product={product}
+            productReviews={productReviews}
+            adminLoggedIn={adminLoggedIn}
+            editingDesc={editingDesc}
+            setEditingDesc={setEditingDesc}
+            editDescValue={editDescValue}
+            setEditDescValue={setEditDescValue}
+            handleSaveDesc={handleSaveDesc}
+            isLoggedIn={isLoggedIn}
+            user={user}
+            canReview={canReview}
+            reviewerName={reviewerName}
+            rating={rating}
+            setRating={setRating}
+            reviewTitle={reviewTitle}
+            setReviewTitle={setReviewTitle}
+            reviewComment={reviewComment}
+            setReviewComment={setReviewComment}
+            reviewSubmitting={reviewSubmitting}
+            reviewMessage={reviewMessage}
+            handleReviewSubmit={handleReviewSubmit}
+          />
           </div>
         </div>
       </main>
@@ -652,9 +754,18 @@ function ProductDescription({ description }: { description: string }) {
   );
 }
 
-function TabsComponent({ product, productReviews, adminLoggedIn, editingDesc, setEditingDesc, editDescValue, setEditDescValue, handleSaveDesc }: { product: any; productReviews: any[]; adminLoggedIn: boolean; editingDesc: boolean; setEditingDesc: (v: boolean) => void; editDescValue: string; setEditDescValue: (v: string) => void; handleSaveDesc: () => void }) {
+function TabsComponent({
+  product, productReviews, adminLoggedIn, editingDesc, setEditingDesc, editDescValue, setEditDescValue, handleSaveDesc,
+  isLoggedIn, user, canReview, reviewerName, rating, setRating, reviewTitle, setReviewTitle, reviewComment, setReviewComment, reviewSubmitting, reviewMessage, handleReviewSubmit
+}: {
+  product: any; productReviews: any[]; adminLoggedIn: boolean; editingDesc: boolean; setEditingDesc: (v: boolean) => void; editDescValue: string; setEditDescValue: (v: string) => void; handleSaveDesc: () => void;
+  isLoggedIn: boolean; user: any; canReview: boolean; reviewerName: string;
+  rating: number; setRating: (v: number) => void;
+  reviewTitle: string; setReviewTitle: (v: string) => void;
+  reviewComment: string; setReviewComment: (v: string) => void;
+  reviewSubmitting: boolean; reviewMessage: string; handleReviewSubmit: (e: React.FormEvent) => void;
+}) {
   const [activeTab, setActiveTab] = useState('description');
-  const { isLoggedIn } = useStore();
 
   return (
     <>
@@ -709,17 +820,70 @@ function TabsComponent({ product, productReviews, adminLoggedIn, editingDesc, se
               </p>
             </div>
           )}
+          {isLoggedIn && !canReview && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+              <p className="text-amber-900 text-sm">Only verified purchasers who have bought this product can leave a review.</p>
+            </div>
+          )}
+          {isLoggedIn && canReview && (
+            <form onSubmit={handleReviewSubmit} className="bg-white border border-gray-100 rounded-xl p-5 mb-6 shadow-sm">
+              <p className="font-bold text-gray-900 text-sm mb-3">Write a Review</p>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-semibold text-gray-600">Your Rating:</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button key={star} type="button" onClick={() => setRating(star)} className="focus:outline-none">
+                      <Star size={18} className={star <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-3">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Review Title</label>
+                <input value={reviewTitle} onChange={e => setReviewTitle(e.target.value)} required
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700"
+                  placeholder="Summarize your experience" />
+              </div>
+              <div className="mb-3">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Your Review</label>
+                <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} required rows={4}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 resize-none"
+                  placeholder="Share your honest feedback..." />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-green-700">
+                  <CheckCircle size={14} /> Verified Purchaser
+                </div>
+                <button type="submit" disabled={reviewSubmitting}
+                  className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60"
+                  style={{ background: '#1e4a2a' }}>
+                  {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+              {reviewMessage && (
+                <p className={`mt-3 text-xs ${reviewMessage.includes('Thank you') ? 'text-green-700' : 'text-red-600'}`}>{reviewMessage}</p>
+              )}
+            </form>
+          )}
           {productReviews.length === 0 ? (
             <p className="text-gray-500 text-sm">No reviews yet. Be the first to review!</p>
           ) : (
             <div className="space-y-5">
               {productReviews.map(r => (
                 <div key={r.id} className="border border-gray-100 rounded-xl p-5">
-                  <div className="flex gap-1 mb-1">
-                    {[...Array(5)].map((_, i) => <span key={i}>{i < r.rating ? '⭐' : '☆'}</span>)}
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => <span key={i}>{i < r.rating ? '⭐' : '☆'}</span>)}
+                    </div>
+                    {r.verifiedPurchase && (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        <CheckCircle size={11} /> Verified Purchase
+                      </span>
+                    )}
                   </div>
                   <p className="font-bold text-gray-900 text-sm mb-1">{r.title}</p>
                   <p className="text-gray-600 text-sm">{r.comment}</p>
+                  <p className="text-xs text-gray-400 mt-2">By {r.customerName} · {new Date(r.createdAt).toLocaleDateString('en-IN')}</p>
                 </div>
               ))}
             </div>

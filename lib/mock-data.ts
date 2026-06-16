@@ -57,7 +57,7 @@ export interface Order {
   userId: string;
   items: OrderItem[];
   total: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
   razorpayOrderId: string;
   razorpayPaymentId: string;
   email: string;
@@ -70,7 +70,9 @@ export interface OrderItem {
   productId: string;
   variationId: string;
   quantity: number;
+  qty?: number;
   price: number;
+  name?: string;
 }
 
 export const mockProducts: Product[] = [

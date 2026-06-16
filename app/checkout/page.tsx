@@ -191,15 +191,15 @@ export default function CheckoutPage() {
             const orderItems = cart.map((item) => {
               const product = products.find((p) => p.id === item.productId);
               const variation = product?.variations.find((v) => v.id === item.variationId);
-              return { productId: item.productId, variationId: item.variationId, quantity: item.quantity, price: variation?.price || 0 };
+              return { productId: item.productId, variationId: item.variationId, quantity: item.quantity, price: variation?.price || 0, name: `${product?.name} (${variation?.name})` };
             });
             const shippingAddressStr = `${deliveryAddress.address}, ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.pincode}`;
             const orderData = {
-              id: Math.random().toString(),
+              id: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
               userId: user?.id || '',
               items: orderItems,
               total,
-              status: 'completed' as const,
+              status: 'processing' as const,
               razorpayOrderId: response.razorpay_order_id || '',
               razorpayPaymentId: response.razorpay_payment_id || '',
               email: formData.email,
@@ -212,7 +212,7 @@ export default function CheckoutPage() {
             if (appliedCoupon) {
               fetch('/api/coupon-use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
             }
-            fetch('/api/orders-save', {
+            await fetch('/api/orders-save', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -224,7 +224,7 @@ export default function CheckoutPage() {
                 items: orderItems.map((item) => {
                   const product = products.find((p) => p.id === item.productId);
                   const variation = product?.variations.find((v) => v.id === item.variationId);
-                  return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+                  return { productId: item.productId, variationId: item.variationId, name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
                 }),
                 subtotal: cartTotal, discount, shipping, tax,
               }),

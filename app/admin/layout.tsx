@@ -3,12 +3,13 @@
 import { useAdminStore } from '@/lib/admin-store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Package, FileText, Tag, ShoppingBag, LogOut, Menu, X, Star, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, Tag, ShoppingBag, LogOut, Menu, X, Star, Users, Settings, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 
 const NAV = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Products', href: '/admin/products', icon: Package },
+  { label: 'Categories', href: '/admin/categories', icon: FolderOpen },
   { label: 'Blogs', href: '/admin/blogs', icon: FileText },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },

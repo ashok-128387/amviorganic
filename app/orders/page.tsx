@@ -154,10 +154,10 @@ export default function OrdersPage() {
                                 {product?.name || item.name || 'Product'}
                               </p>
                               <p className="text-xs text-gray-600">
-                                {variation?.name || ''} x {item.quantity}
+                                {variation?.name || ''} x {item.quantity ?? item.qty ?? 1}
                               </p>
                               <p className="font-bold text-gray-900 text-sm mt-1">
-                                ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                                ₹{(item.price * (item.quantity ?? item.qty ?? 1)).toLocaleString('en-IN')}
                               </p>
                             </div>
                           </div>

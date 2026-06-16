@@ -53,7 +53,7 @@ export default function AdminDashboard() {
 
   const statusColors: Record<string, string> = {
     pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6',
-    delivered: '#10b981', cancelled: '#ef4444',
+    delivered: '#10b981', cancelled: '#ef4444', completed: '#10b981',
   };
 
   return (

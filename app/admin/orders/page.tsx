@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { AdminOrder } from '@/lib/admin-store';
-import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package } from 'lucide-react';
+import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package, Download } from 'lucide-react';
 
-const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'completed'];
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   pending:    { bg: '#fef3c718', text: '#d97706' },
@@ -12,6 +12,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   shipped:    { bg: '#f5f3ff',   text: '#8b5cf6' },
   delivered:  { bg: '#f0fdf4',   text: '#16a34a' },
   cancelled:  { bg: '#fef2f2',   text: '#ef4444' },
+  completed:  { bg: '#f0fdf4',   text: '#16a34a' },
 };
 
 export default function AdminOrdersPage() {
@@ -61,6 +62,34 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const exportOrders = () => {
+    const headers = ['Order ID', 'Date', 'Customer', 'Email', 'Phone', 'Status', 'Total', 'Tracking ID', 'Razorpay Order ID', 'Razorpay Payment ID', 'Shipping Address', 'Billing Address', 'Items'];
+    const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
+    const rows = orders.map(o => [
+      o.id,
+      new Date(o.createdAt).toLocaleDateString('en-IN'),
+      escape(o.customerName),
+      o.email,
+      o.phone,
+      o.status,
+      o.total,
+      o.trackingId || '',
+      o.razorpayOrderId || '',
+      o.razorpayPaymentId || '',
+      escape(o.shippingAddress || ''),
+      escape(o.billingAddress || ''),
+      escape(o.items.map((item: any) => `${item.name} x${item.qty}`).join('; ')),
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSaveTracking = async (orderId: string) => {
     if (trackingInput.trim()) {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, trackingId: trackingInput.trim() } : o));
@@ -75,9 +104,18 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Orders</h1>
-        <p className="text-sm text-gray-500">{orders.length} total orders</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Orders</h1>
+          <p className="text-sm text-gray-500">{orders.length} total orders</p>
+        </div>
+        <button onClick={exportOrders}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
+          style={{ background: '#f5f2ed', color: '#1e4a2a' }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#e8e0d5')}
+          onMouseLeave={e => (e.currentTarget.style.background = '#f5f2ed')}>
+          <Download size={16} /> Export CSV
+        </button>
       </div>
 
       {/* Filter tabs */}

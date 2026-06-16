@@ -15,6 +15,7 @@ export async function GET() {
       title: r.title,
       comment: r.comment,
       approved: r.approved === 1,
+      verifiedPurchase: r.verified_purchase === 1,
       createdAt: r.created_at,
     }));
     return NextResponse.json({ reviews });
