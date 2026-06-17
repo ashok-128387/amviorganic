@@ -547,6 +547,11 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: '#1e4a2a' }}>You May Also Like</h2>
             <p className="text-sm mt-2" style={{ color: '#888' }}>Handpicked products just for you</p>
+            <Link href="/products"
+              className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold transition hover:underline"
+              style={{ color: '#1e4a2a' }}>
+              View All Products <span aria-hidden="true">→</span>
+            </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {allProducts.filter(p => p.id !== product.id).slice(0, 4).map((p) => {
@@ -582,6 +587,17 @@ export default function ProductPage({ params }: ProductPageProps) {
               );
             })}
           </div>
+          {allProducts.filter(p => p.id !== product.id).length > 4 && (
+            <div className="text-center mt-10">
+              <Link href="/products"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition"
+                style={{ background: '#1e4a2a' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#2a6b3e'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#1e4a2a'; }}>
+                View All Products <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
     </>
