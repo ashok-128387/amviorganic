@@ -58,7 +58,7 @@ export default function AdminProductsPage() {
     // Pad images array to 5 slots, use main image as first if images is empty
     const existingImages = p.images?.length ? [...p.images] : [p.image || ''];
     while (existingImages.length < 5) existingImages.push('');
-    setForm({ name: p.name, description: p.description, category: p.category, sku: p.sku || '', image: p.image, images: existingImages, rating: p.rating, reviewCount: p.reviewCount, variations: p.variations });
+    setForm({ name: p.name, description: p.description, category: p.category, sku: p.sku || '', image: p.image, images: existingImages, rating: p.rating, reviewCount: p.reviewCount, variations: p.variations, sortOrder: p.sortOrder });
     setEditId(p.id); setImgTab('upload');
     setShowForm(true);
   };
@@ -101,11 +101,13 @@ export default function AdminProductsPage() {
   const handleSave = async () => {
     if (!form.name.trim()) return;
     const id = editId ?? `p-${Date.now()}`;
+    const existing = editId ? products.find(p => p.id === editId) : undefined;
     const product: AdminProduct = {
       ...form, id,
       image: form.image || '',
       variations: form.variations.map((v, i) => ({ ...v, id: v.id || `v-${id}-${i}`, productId: id })),
-      createdAt: new Date(),
+      sortOrder: form.sortOrder ?? existing?.sortOrder ?? 0,
+      createdAt: existing?.createdAt ?? new Date(),
     };
     await fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: product.createdAt.toISOString() }) });
     await loadProducts();

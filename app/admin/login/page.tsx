@@ -1,27 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-
-const ADMIN_PASSWORD = 'amvi@admin2024';
+import { useAdminStore } from '@/lib/admin-store';
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { adminLogin } = useAdminStore();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (password !== ADMIN_PASSWORD) {
+    if (!adminLogin(password)) {
       setError('Incorrect password. Try again.');
       return;
     }
-    try {
-      const key = 'amvi-admin-store-v2';
-      const existing = localStorage.getItem(key);
-      const data = existing ? JSON.parse(existing) : { state: {}, version: 0 };
-      if (!data.state) data.state = {};
-      data.state.adminLoggedIn = true;
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (_) {}
     window.location.href = '/admin';
   };
 

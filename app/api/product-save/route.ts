@@ -12,14 +12,15 @@ export async function POST(req: NextRequest) {
               name=excluded.name, description=excluded.description, category=excluded.category,
               sku=excluded.sku, image=excluded.image, images=excluded.images, rating=excluded.rating,
               review_count=excluded.review_count, variations=excluded.variations,
-              sort_order=excluded.sort_order`,
+              sort_order=COALESCE(excluded.sort_order, products.sort_order),
+              created_at=COALESCE(excluded.created_at, products.created_at)`,
       args: [
         p.id, p.name, p.description || '', p.category || 'Sweeteners', p.sku || '',
         p.image || '', JSON.stringify(p.images || []),
         p.rating ?? 5, p.reviewCount ?? 0,
         JSON.stringify(p.variations || []),
-        p.sortOrder ?? 0,
-        p.createdAt || new Date().toISOString(),
+        p.sortOrder ?? null,
+        p.createdAt || null,
       ],
     });
 

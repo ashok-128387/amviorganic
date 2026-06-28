@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RegisteredUser } from '@/lib/admin-store';
-import { Trash2, Search, Users, Mail, Calendar } from 'lucide-react';
+import { Trash2, Search, Users, Mail, Calendar, Download, Upload, FileUp, X } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<RegisteredUser[]>([]);
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; total: number; errors: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
     fetch('/api/users-get')
@@ -29,6 +33,63 @@ export default function AdminUsersPage() {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  const exportUsers = () => {
+    const header = 'id,name,email,registeredAt';
+    const rows = users.map(u => `"${u.id}","${u.name.replace(/"/g, '""')}","${u.email}","${u.registeredAt}"`);
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `amvi-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTemplate = () => {
+    const header = 'id,name,email,registeredAt';
+    const example = '"u-123","Priya Sharma","priya@example.com","2024-01-15T10:00:00.000Z"';
+    const blob = new Blob([`${header}\n${example}`], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user-import-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    const text = await importFile.text();
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) {
+      setImportResult({ imported: 0, total: 0, errors: ['CSV file is empty or missing data'] });
+      return;
+    }
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      const row: Record<string, string> = {};
+      headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+      rows.push(row);
+    }
+
+    const res = await fetch('/api/users-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users: rows }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setImportResult({ imported: data.imported, total: data.total, errors: data.errors || [] });
+      await load();
+      setImportFile(null);
+    } else {
+      setImportResult({ imported: 0, total: 0, errors: [data.error || 'Import failed'] });
+    }
+  };
+
   // Stats
   const today = new Date().toDateString();
   const newToday = users.filter(u => new Date(u.registeredAt).toDateString() === today).length;
@@ -40,9 +101,23 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Registered Users</h1>
-        <p className="text-sm text-gray-500">{users.length} total · {newToday} today · {thisMonth} this month</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Registered Users</h1>
+          <p className="text-sm text-gray-500">{users.length} total · {newToday} today · {thisMonth} this month</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={exportUsers}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
+            style={{ background: '#f5f2ed', color: '#1e4a2a' }}>
+            <Download size={16} /> Export
+          </button>
+          <button onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
+            style={{ background: '#1e4a2a', color: '#fff' }}>
+            <Upload size={16} /> Import
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -151,6 +226,56 @@ export default function AdminUsersPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto"
+          onClick={e => e.target === e.currentTarget && setImportOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <p className="font-bold text-gray-900">Import Users</p>
+              <button onClick={() => setImportOpen(false)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-xs text-gray-500">
+                Upload a CSV with columns:
+                <code className="block bg-gray-50 p-2 rounded-lg mt-1 text-xs">id,name,email,registeredAt</code>
+              </p>
+              <p className="text-xs text-gray-500"><code>id</code> and <code>registeredAt</code> are optional. Existing emails will not be overwritten.</p>
+              <button onClick={downloadTemplate}
+                className="flex items-center gap-2 text-xs font-semibold" style={{ color: '#1e4a2a' }}>
+                <FileUp size={14} /> Download CSV Template
+              </button>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Select CSV File</label>
+                <input type="file" accept=".csv" ref={fileInputRef}
+                  onChange={e => setImportFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700" />
+              </div>
+              {importResult && (
+                <div className={`rounded-xl p-3 text-xs ${importResult.errors.length ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800'}`}>
+                  <p className="font-semibold">Imported {importResult.imported} of {importResult.total} users.</p>
+                  {importResult.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5 list-disc pl-4">
+                      {importResult.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
+                      {importResult.errors.length > 5 && <li>...and {importResult.errors.length - 5} more</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+              <button onClick={() => setImportOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Cancel</button>
+              <button onClick={handleImport} disabled={!importFile}
+                className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ background: '#1e4a2a' }}>
+                Import Users
+              </button>
+            </div>
           </div>
         </div>
       )}

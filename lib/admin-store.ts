@@ -40,10 +40,12 @@ export interface AdminOrder {
   phone: string;
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
-  items: { name: string; qty: number; price: number; productId?: string; variationId?: string }[];
+  items: { name: string; qty: number; quantity?: number; price: number; productId?: string; variationId?: string }[];
   shippingAddress?: string;
   billingAddress?: string;
   trackingId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   createdAt: string;
 }
 
@@ -57,6 +59,7 @@ export interface ProductReview {
   title: string;
   comment: string;
   approved: boolean;
+  verifiedPurchase: boolean;
   createdAt: string;
 }
 
@@ -84,6 +87,8 @@ export interface SiteSettings {
   freeShippingThreshold: number;
   shippingCharge: number;
   taxPercent: number;
+  shippingZones: Record<string, { baseRate: number; gstPercent: number; label: string }>;
+  shippingPincodes: Record<string, string>;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -154,11 +159,29 @@ const DEFAULT_SETTINGS: SiteSettings = {
   freeShippingThreshold: 500,
   shippingCharge: 50,
   taxPercent: 5,
+  shippingZones: {
+    A: { baseRate: 39, gstPercent: 18, label: 'Bangalore / Intercity' },
+    B: { baseRate: 49, gstPercent: 18, label: 'Karnataka' },
+    C: { baseRate: 59, gstPercent: 18, label: 'Metro & Rest of India' },
+    E: { baseRate: 69, gstPercent: 18, label: 'Special / Remote' },
+  },
+  shippingPincodes: {},
 };
 
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
+      // ── Auth ──
+      adminLoggedIn: false,
+      adminLogin: (password: string) => {
+        if (password !== ADMIN_PASSWORD) return false;
+        set({ adminLoggedIn: true });
+        return true;
+      },
+      adminLogout: () => {
+        set({ adminLoggedIn: false });
+      },
+
       // ── Products ──
       products: mockProducts,
       addProduct: (p) => set((s) => ({ products: [...s.products, p] })),
@@ -232,14 +255,14 @@ export const useAdminStore = create<AdminState>()(
           customerName: 'Priya Sharma', email: 'priya@example.com',
           rating: 5, title: 'Pure and authentic',
           comment: 'Best jaggery cubes I have tasted. Pure and chemical-free.',
-          approved: true, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          approved: true, verifiedPurchase: true, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         },
         {
           id: 'rev2', productId: '2', productName: 'Masala Jaggery Cubes',
           customerName: 'Rajesh Kumar', email: 'rajesh@example.com',
           rating: 4, title: 'Great masala blend',
           comment: 'Love the spice mix. Would have given 5 stars but packaging could be better.',
-          approved: false, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          approved: false, verifiedPurchase: false, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         },
       ],
       addReview: (r) => set((s) => ({ reviews: [...s.reviews, r] })),

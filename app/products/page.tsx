@@ -18,16 +18,19 @@ export default function AllProductsPage() {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => {
       if (p) {
         setAllProducts(p);
-        const cats = Array.from(new Set(['Sweeteners', 'Combo Deals', 'New', ...p.map((pr: any) => pr.category as string)]));
+        const cats = Array.from(new Set(['Sweeteners', 'Combo Deals', 'New', ...p.map((pr: any) => pr.category as string)]))
+          .filter(c => c && c !== 'Uncategorized');
         setAllCategories(cats);
-        setFilters({ categories: cat ? [cat] : cats, maxPrice: PRICE_MAX, sort: 'default' });
+        const selected = cat ? [cat] : cats;
+        setFilters({ categories: selected, maxPrice: PRICE_MAX, sort: 'default' });
       }
     });
   }, []);
 
   const filtered = useMemo(() => {
     if (!filters) return [];
-    let list = allProducts.filter((p) => filters.categories.includes(p.category));
+    const allSelected = allCategories.length > 0 && allCategories.every(c => filters.categories.includes(c));
+    let list = allProducts.filter((p) => filters.categories.includes(p.category) || (allSelected && p.category === 'Uncategorized'));
     list = list.filter((p) => Math.min(...p.variations.map((v) => v.price)) <= filters.maxPrice);
     if (filters.sort === 'price-asc') list = [...list].sort((a, b) => Math.min(...a.variations.map(v => v.price)) - Math.min(...b.variations.map(v => v.price)));
     if (filters.sort === 'price-desc') list = [...list].sort((a, b) => Math.min(...b.variations.map(v => v.price)) - Math.min(...a.variations.map(v => v.price)));

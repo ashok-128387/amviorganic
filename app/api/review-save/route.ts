@@ -6,17 +6,19 @@ export async function POST(req: NextRequest) {
     await initDb();
     const r = await req.json();
     await db.execute({
-      sql: `INSERT INTO reviews (id, product_id, product_name, customer_name, email, rating, title, comment, approved, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      sql: `INSERT INTO reviews (id, product_id, product_name, customer_name, email, rating, title, comment, approved, verified_purchase, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               product_id=excluded.product_id, product_name=excluded.product_name,
               customer_name=excluded.customer_name, email=excluded.email,
               rating=excluded.rating, title=excluded.title,
-              comment=excluded.comment, approved=excluded.approved`,
+              comment=excluded.comment, approved=excluded.approved,
+              verified_purchase=COALESCE(excluded.verified_purchase, reviews.verified_purchase)`,
       args: [
         r.id, r.productId, r.productName, r.customerName,
         r.email || '', r.rating || 5, r.title || '',
         r.comment, r.approved ? 1 : 0,
+        r.verifiedPurchase ? 1 : 0,
         r.createdAt || new Date().toISOString(),
       ],
     });

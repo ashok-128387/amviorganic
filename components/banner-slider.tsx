@@ -4,16 +4,26 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const banners = [
+const DEFAULT_BANNERS = [
   '/Product images for website/Product images for website/Banner 1.png',
   '/Product images for website/Product images for website/Banner 2.png',
   '/Product images for website/Product images for website/Banner 3.png',
 ];
 
 export default function BannerSlider() {
+  const [banners, setBanners] = useState<string[]>(DEFAULT_BANNERS);
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    fetch('/api/banners-get')
+      .then(r => r.json())
+      .then(({ banners: b }) => {
+        if (b && b.length > 0) setBanners(b);
+      })
+      .catch(() => {});
+  }, []);
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -26,15 +36,17 @@ export default function BannerSlider() {
     if (!paused) startTimer();
     else if (timerRef.current) clearInterval(timerRef.current);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [paused]);
+  }, [paused, banners.length]);
 
   const prev = () => { setCurrent((p) => (p - 1 + banners.length) % banners.length); if (!paused) startTimer(); };
   const next = () => { setCurrent((p) => (p + 1) % banners.length); if (!paused) startTimer(); };
 
+  if (banners.length === 0) return null;
+
   return (
     <section className="banner-section relative w-full overflow-hidden" data-banner>
       {banners.map((src, i) => (
-        <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
+        <div key={`${src}-${i}`} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
           <Image src={src} alt={`Banner ${i + 1}`} fill className="object-cover object-center" priority={i === 0} sizes="100vw" />
         </div>
       ))}

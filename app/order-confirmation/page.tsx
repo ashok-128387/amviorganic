@@ -60,7 +60,7 @@ function OrderConfirmationContent() {
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Order Number</p>
-                <p className="text-2xl font-bold text-gray-900">{order.id.slice(0, 8).toUpperCase()}</p>
+                <p className="text-2xl font-bold text-gray-900">{order.id.toUpperCase()}</p>
               </div>
               <div>
                 <p className="text-gray-600 text-sm mb-1">Order Date</p>

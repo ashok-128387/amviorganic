@@ -1,10 +1,11 @@
 // ─── Email Service ────────────────────────────────────────────────────────────
 // Emails configured:
-//   1. OTP Login             → sendOtpEmail(email, otp)
-//   2. Welcome after signup  → sendWelcomeEmail(email, name)
-//   3. Order Confirmation    → sendOrderConfirmationEmail(order)
-//   4. Order Shipped         → sendOrderShippedEmail(order, trackingId)
-//   5. Contact Inquiry       → sendContactEmail(data)
+//   1. OTP Login                  → sendOtpEmail(email, otp)
+//   2. Welcome after signup       → sendWelcomeEmail(email, name)
+//   3. Order Confirmation         → sendOrderConfirmationEmail(order)
+//   4. Order Shipped              → sendOrderShippedEmail(order, trackingId)
+//   5. New Order Admin Alert      → sendNewOrderAdminEmail(order, adminEmail)
+//   6. Contact Inquiry            → sendContactEmail(data)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface OrderEmailData {
@@ -20,6 +21,7 @@ export interface OrderEmailData {
   total: number;
   shippingAddress: string;
   createdAt: string;
+  razorpayPaymentId?: string;
 }
 
 // ── Core sender ───────────────────────────────────────────────────────────────
@@ -111,7 +113,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
         <!-- Order ID -->
         <div style="background:#f5f2ed;border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;color:#888">Order ID</span>
-          <span style="font-size:14px;font-weight:800;color:#1e4a2a;font-family:monospace">${order.orderId.slice(0,8).toUpperCase()}</span>
+          <span style="font-size:14px;font-weight:800;color:#1e4a2a;font-family:monospace">${order.orderId.toUpperCase()}</span>
         </div>
 
         <!-- Items -->
@@ -165,10 +167,88 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
       </div>
     </div>
   `;
-  return sendEmail({ to: order.email, subject: `Order Confirmed ✅ #${order.orderId.slice(0,8).toUpperCase()} — AMVI Organics`, html });
+  return sendEmail({ to: order.email, subject: `Order Confirmed ✅ #${order.orderId.toUpperCase()} — AMVI Organics`, html });
 }
 
-// ── 5. Contact Inquiry Email ─────────────────────────────────────────────────
+// ── 5. New Order Admin Notification ───────────────────────────────────────────
+export async function sendNewOrderAdminEmail(order: OrderEmailData, adminEmail: string) {
+  const itemsHtml = order.items.map(item => `
+    <tr>
+      <td style="padding:10px 0;color:#333;font-size:14px;border-bottom:1px solid #f0ece6">${item.name}</td>
+      <td style="padding:10px 0;color:#333;font-size:14px;text-align:center;border-bottom:1px solid #f0ece6">×${item.qty}</td>
+      <td style="padding:10px 0;color:#1e4a2a;font-weight:700;font-size:14px;text-align:right;border-bottom:1px solid #f0ece6">₹${(item.price * item.qty).toLocaleString('en-IN')}</td>
+    </tr>
+  `).join('');
+
+  const paymentStatus = order.razorpayPaymentId ? 'Paid (Razorpay)' : 'Pending';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;padding:0;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #f0ece6">
+      <div style="background:linear-gradient(135deg,#1e4a2a,#2a6b3e);padding:24px 32px">
+        <p style="font-size:20px;font-weight:800;color:#e8b84b;margin:0">AMVI Organics</p>
+        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin:4px 0 0">New Order Received</p>
+      </div>
+      <div style="padding:28px 32px">
+        <p style="font-size:14px;color:#555;margin:0 0 20px">A new order has been placed on your store. Details below:</p>
+
+        <div style="background:#f5f2ed;border-radius:10px;padding:14px 18px;margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;color:#888">Order ID</span>
+            <span style="font-size:13px;font-weight:700;color:#1e4a2a">${order.orderId.toUpperCase()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;color:#888">Customer Name</span>
+            <span style="font-size:13px;font-weight:700;color:#1a1a1a">${order.customerName}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;color:#888">Email</span>
+            <span style="font-size:13px;font-weight:700;color:#1a1a1a">${order.email}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;color:#888">Phone</span>
+            <span style="font-size:13px;font-weight:700;color:#1a1a1a">${order.phone}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;color:#888">Order Amount</span>
+            <span style="font-size:13px;font-weight:700;color:#1e4a2a">₹${order.total.toLocaleString('en-IN')}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-size:13px;color:#888">Payment Status</span>
+            <span style="font-size:13px;font-weight:700;color:#1e4a2a">${paymentStatus}</span>
+          </div>
+        </div>
+
+        <h3 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px">Products Ordered</h3>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+          <thead>
+            <tr>
+              <th style="text-align:left;font-size:12px;color:#aaa;font-weight:600;padding-bottom:8px;border-bottom:2px solid #f0ece6">Product</th>
+              <th style="text-align:center;font-size:12px;color:#aaa;font-weight:600;padding-bottom:8px;border-bottom:2px solid #f0ece6">Qty</th>
+              <th style="text-align:right;font-size:12px;color:#aaa;font-weight:600;padding-bottom:8px;border-bottom:2px solid #f0ece6">Price</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+
+        <h3 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.5px">Delivery Address</h3>
+        <div style="border:1px solid #f0ece6;border-radius:10px;padding:14px 18px;margin-bottom:20px">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a">${order.customerName}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#555">${order.shippingAddress}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#555">📞 ${order.phone}</p>
+        </div>
+
+        <a href="https://amviorganics.com/admin/orders" style="display:block;background:#1e4a2a;color:#fff;padding:13px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;text-align:center">View Order in Admin →</a>
+      </div>
+      <div style="background:#f5f2ed;padding:14px;text-align:center">
+        <p style="color:#bbb;font-size:11px;margin:0">© 2024 AMVI Organics</p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({ to: adminEmail, subject: `New Order #${order.orderId.toUpperCase()} — AMVI Organics`, html });
+}
+
+// ── 6. Contact Inquiry Email ─────────────────────────────────────────────────
 export interface ContactEmailData {
   name: string;
   email: string;
@@ -244,7 +324,7 @@ export async function sendOrderShippedEmail(order: OrderEmailData, trackingId: s
         <div style="background:#f5f2ed;border-radius:10px;padding:16px 18px;margin-bottom:20px">
           <div style="display:flex;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:13px;color:#888">Order ID</span>
-            <span style="font-size:13px;font-weight:700;color:#1e4a2a">${order.orderId.slice(0,8).toUpperCase()}</span>
+            <span style="font-size:13px;font-weight:700;color:#1e4a2a">${order.orderId.toUpperCase()}</span>
           </div>
           <div style="display:flex;justify-content:space-between">
             <span style="font-size:13px;color:#888">Tracking ID</span>

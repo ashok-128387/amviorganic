@@ -15,30 +15,55 @@ const DEFAULT_SETTINGS: SiteSettings = {
   freeShippingThreshold: 500,
   shippingCharge: 50,
   taxPercent: 5,
+  shippingZones: {
+    A: { baseRate: 39, gstPercent: 18, label: 'Bangalore / Intercity' },
+    B: { baseRate: 49, gstPercent: 18, label: 'Karnataka' },
+    C: { baseRate: 59, gstPercent: 18, label: 'Metro & Rest of India' },
+    E: { baseRate: 69, gstPercent: 18, label: 'Special / Remote' },
+  },
+  shippingPincodes: {},
 };
+
+function parseSettings(settings: Record<string, string>): Partial<SiteSettings> {
+  const parsed: Partial<SiteSettings> = {
+    storeName: settings.storeName,
+    contactEmail: settings.contactEmail,
+    contactPhone: settings.contactPhone,
+    address: settings.address,
+    instagramUrl: settings.instagramUrl,
+    facebookUrl: settings.facebookUrl,
+    whatsappNumber: settings.whatsappNumber,
+    freeShippingThreshold: Number(settings.freeShippingThreshold),
+    shippingCharge: Number(settings.shippingCharge),
+    taxPercent: Number(settings.taxPercent),
+  };
+  try {
+    if (settings.shippingZones) parsed.shippingZones = JSON.parse(settings.shippingZones);
+  } catch {}
+  try {
+    if (settings.shippingPincodes) parsed.shippingPincodes = JSON.parse(settings.shippingPincodes);
+  } catch {}
+  return parsed;
+}
 
 export default function AdminSettingsPage() {
   const [form, setForm] = useState<SiteSettings>({ ...DEFAULT_SETTINGS });
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeZone, setPincodeZone] = useState<'A' | 'B' | 'C' | 'E'>('A');
 
   useEffect(() => {
     fetch('/api/settings-get')
       .then(r => r.json())
       .then(({ settings }) => {
         if (settings) {
+          const parsed = parseSettings(settings);
           setForm(prev => ({
             ...prev,
-            storeName: settings.storeName ?? prev.storeName,
-            contactEmail: settings.contactEmail ?? prev.contactEmail,
-            contactPhone: settings.contactPhone ?? prev.contactPhone,
-            address: settings.address ?? prev.address,
-            instagramUrl: settings.instagramUrl ?? prev.instagramUrl,
-            facebookUrl: settings.facebookUrl ?? prev.facebookUrl,
-            whatsappNumber: settings.whatsappNumber ?? prev.whatsappNumber,
-            freeShippingThreshold: Number(settings.freeShippingThreshold ?? prev.freeShippingThreshold),
-            shippingCharge: Number(settings.shippingCharge ?? prev.shippingCharge),
-            taxPercent: Number(settings.taxPercent ?? prev.taxPercent),
+            ...parsed,
+            shippingZones: parsed.shippingZones || prev.shippingZones,
+            shippingPincodes: parsed.shippingPincodes || prev.shippingPincodes,
           }));
         }
         setLoading(false);
@@ -46,14 +71,47 @@ export default function AdminSettingsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const set = (k: keyof SiteSettings, v: string | number) =>
+  const set = (k: keyof SiteSettings, v: string | number | Record<string, any>) =>
     setForm(f => ({ ...f, [k]: v }));
 
+  const setZoneRate = (zone: string, baseRate: number) => {
+    setForm(f => ({
+      ...f,
+      shippingZones: {
+        ...f.shippingZones,
+        [zone]: { ...f.shippingZones[zone], baseRate },
+      },
+    }));
+  };
+
+  const addPincodeOverride = () => {
+    const clean = pincodeInput.trim();
+    if (!/^\d{6}$/.test(clean)) return;
+    setForm(f => ({
+      ...f,
+      shippingPincodes: { ...f.shippingPincodes, [clean]: pincodeZone },
+    }));
+    setPincodeInput('');
+  };
+
+  const removePincodeOverride = (pin: string) => {
+    setForm(f => {
+      const next = { ...f.shippingPincodes };
+      delete next[pin];
+      return { ...f, shippingPincodes: next };
+    });
+  };
+
   const handleSave = async () => {
+    const payload = {
+      ...form,
+      shippingZones: JSON.stringify(form.shippingZones),
+      shippingPincodes: JSON.stringify(form.shippingPincodes),
+    };
     await fetch('/api/settings-save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -111,15 +169,15 @@ export default function AdminSettingsPage() {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Shipping Charge (₹)</label>
-            <input type="number" value={form.shippingCharge}
-              onChange={e => set('shippingCharge', Number(e.target.value))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700" />
-          </div>
-          <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1">Tax (%)</label>
             <input type="number" value={form.taxPercent}
               onChange={e => set('taxPercent', Number(e.target.value))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Fallback Shipping (₹)</label>
+            <input type="number" value={form.shippingCharge}
+              onChange={e => set('shippingCharge', Number(e.target.value))}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700" />
           </div>
         </div>
@@ -128,8 +186,60 @@ export default function AdminSettingsPage() {
         <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-600 space-y-1">
           <p className="font-semibold text-gray-700 mb-2">Preview</p>
           <p>Free shipping on orders above <strong>₹{form.freeShippingThreshold}</strong></p>
-          <p>Shipping charge below threshold: <strong>₹{form.shippingCharge}</strong></p>
           <p>Tax applied: <strong>{form.taxPercent}%</strong></p>
+        </div>
+      </div>
+
+      {/* Shipping Zones */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">🚚 Pincode Shipping Zones</p>
+        <p className="text-xs text-gray-500">Base rates below will have {form.shippingZones.A.gstPercent}% GST added at checkout.</p>
+        <div className="grid grid-cols-2 gap-4">
+          {Object.entries(form.shippingZones).map(([zone, config]) => (
+            <div key={zone} className="border border-gray-100 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold text-gray-900">Zone {zone}</span>
+                <span className="text-xs text-gray-500">{config.label}</span>
+              </div>
+              <label className="block text-xs text-gray-600 mb-1">Base Rate (₹)</label>
+              <input type="number" value={config.baseRate}
+                onChange={e => setZoneRate(zone, Number(e.target.value))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
+            </div>
+          ))}
+        </div>
+
+        {/* Pincode overrides */}
+        <div className="pt-3 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Pincode Overrides</p>
+          <div className="flex gap-2 mb-3">
+            <input value={pincodeInput} onChange={e => setPincodeInput(e.target.value)}
+              placeholder="6-digit pincode"
+              maxLength={6}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
+            <select value={pincodeZone} onChange={e => setPincodeZone(e.target.value as any)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700">
+              {Object.entries(form.shippingZones).map(([z, c]) => (
+                <option key={z} value={z}>Zone {z} — {c.label}</option>
+              ))}
+            </select>
+            <button onClick={addPincodeOverride}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
+              style={{ background: '#1e4a2a' }}>Add</button>
+          </div>
+          {Object.keys(form.shippingPincodes).length === 0 ? (
+            <p className="text-xs text-gray-400">No pincode overrides added.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(form.shippingPincodes).map(([pin, zone]) => (
+                <span key={pin} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: '#f0faf2', color: '#1e4a2a' }}>
+                  {pin} → Zone {zone}
+                  <button onClick={() => removePincodeOverride(pin)} className="ml-1 text-red-500 hover:text-red-700">×</button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

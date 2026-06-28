@@ -2,6 +2,7 @@
 
 import { useStore } from '@/lib/store';
 import { AdminProduct } from '@/lib/admin-store';
+import { calculateShipping, DEFAULT_SHIPPING_ZONES, PincodeMapping, ShippingZone } from '@/lib/shipping';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle, Building2 } from 'lucide-react';
@@ -40,7 +41,13 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [settings, setSettings] = useState({ freeShippingThreshold: 500, shippingCharge: 50, taxPercent: 5 });
+  const [settings, setSettings] = useState({
+    freeShippingThreshold: 500,
+    shippingCharge: 50,
+    taxPercent: 5,
+    shippingZones: DEFAULT_SHIPPING_ZONES as Record<string, { baseRate: number; gstPercent: number; label: string }>,
+    shippingPincodes: {} as PincodeMapping,
+  });
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; message: string } | null>(null);
@@ -50,10 +57,16 @@ export default function CheckoutPage() {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
     fetch('/api/settings-get').then(r => r.json()).then(({ settings: s }) => {
       if (s) {
+        let zones = DEFAULT_SHIPPING_ZONES as Record<string, { baseRate: number; gstPercent: number; label: string }>;
+        let pincodes: PincodeMapping = {};
+        try { if (s.shippingZones) zones = JSON.parse(s.shippingZones); } catch {}
+        try { if (s.shippingPincodes) pincodes = JSON.parse(s.shippingPincodes); } catch {}
         setSettings({
           freeShippingThreshold: Number(s.freeShippingThreshold ?? 500),
           shippingCharge: Number(s.shippingCharge ?? 50),
           taxPercent: Number(s.taxPercent ?? 5),
+          shippingZones: zones,
+          shippingPincodes: pincodes,
         });
       }
     });
@@ -72,7 +85,14 @@ export default function CheckoutPage() {
   }, 0);
 
   const discount = appliedCoupon?.discount ?? 0;
-  const shipping = cartTotal >= settings.freeShippingThreshold ? 0 : settings.shippingCharge;
+  const shippingInfo = calculateShipping(
+    deliveryAddress.pincode,
+    cartTotal,
+    settings.freeShippingThreshold,
+    settings.shippingZones,
+    settings.shippingPincodes
+  );
+  const shipping = shippingInfo.total;
   const tax = Math.round(cartTotal * (settings.taxPercent / 100));
   const total = cartTotal - discount + shipping + tax;
 
@@ -399,6 +419,15 @@ export default function CheckoutPage() {
                 <Truck size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-blue-900">Free delivery on orders above ₹{settings.freeShippingThreshold}</p>
+                  {deliveryAddress.pincode ? (
+                    <p className="text-sm text-blue-800">
+                      {shippingInfo.free
+                        ? 'You qualify for free shipping!'
+                        : `Zone ${shippingInfo.zone} shipping: ₹${shippingInfo.baseRate} + ${settings.shippingZones[shippingInfo.zone]?.gstPercent || 18}% GST = ₹${shippingInfo.total}`}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-800">Enter pincode to calculate shipping</p>
+                  )}
                   <p className="text-sm text-blue-800">Standard delivery: 3-5 business days</p>
                 </div>
               </div>
@@ -493,7 +522,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Shipping</span>
+                  <span>Shipping {shippingInfo.free ? '' : `(Zone ${shippingInfo.zone})`}</span>
                   <span className={shipping === 0 ? 'text-green-700 font-semibold' : ''}>
                     {shipping === 0 ? 'FREE' : `₹${shipping}`}
                   </span>

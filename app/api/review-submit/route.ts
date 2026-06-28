@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Verify purchase: find a delivered/processing/shipped/completed order containing this product
+    // Verify purchase: find an order containing this product with a non-cancelled status
     const ordersResult = await db.execute({
       sql: `SELECT customer_name, items FROM orders
             WHERE email = ? AND status IN ('pending','processing','shipped','delivered','completed')
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     for (const row of ordersResult.rows) {
       const items = JSON.parse(row.items as string || '[]');
-      if (items.some((item: any) => item.productId === productId)) {
+      if (items.some((item: any) => (item.productId || item.id) === productId)) {
         verified = true;
         if (!customerName && row.customer_name) customerName = row.customer_name as string;
         break;
@@ -33,7 +33,22 @@ export async function POST(req: NextRequest) {
     }
 
     if (!verified) {
-      return NextResponse.json({ error: 'Only verified purchasers can review this product' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Only verified purchasers can review this product. Make sure you are logged in with the same email used for the order.' },
+        { status: 403 }
+      );
+    }
+
+    // Prevent duplicate reviews from the same email for the same product
+    const existing = await db.execute({
+      sql: 'SELECT id FROM reviews WHERE product_id = ? AND email = ?',
+      args: [productId, normalizedEmail],
+    });
+    if (existing.rows.length > 0) {
+      return NextResponse.json(
+        { error: 'You have already reviewed this product.' },
+        { status: 409 }
+      );
     }
 
     const id = `rev-${Date.now()}`;

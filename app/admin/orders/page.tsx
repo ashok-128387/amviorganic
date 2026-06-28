@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
       o.razorpayPaymentId || '',
       escape(o.shippingAddress || ''),
       escape(o.billingAddress || ''),
-      escape(o.items.map((item: any) => `${item.name} x${item.qty}`).join('; ')),
+      escape(o.items.map((item: any) => `${item.name} x${item.qty ?? item.quantity ?? 1}`).join('; ')),
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -204,12 +204,15 @@ export default function AdminOrdersPage() {
               <div className="border-t border-gray-50 px-4 py-3 bg-gray-50">
                 <p className="text-xs font-semibold text-gray-500 mb-2">Order Items</p>
                 <div className="space-y-1.5">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{item.name} × {item.qty}</span>
-                      <span className="font-semibold text-gray-800">₹{(item.price * item.qty).toLocaleString('en-IN')}</span>
-                    </div>
-                  ))}
+                  {order.items.map((item, i) => {
+                    const qty = item.qty ?? item.quantity ?? 1;
+                    return (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{item.name} × {qty}</span>
+                        <span className="font-semibold text-gray-800">₹{(item.price * qty).toLocaleString('en-IN')}</span>
+                      </div>
+                    );
+                  })}
                   <div className="flex justify-between font-bold text-sm pt-2 border-t border-gray-200 mt-2">
                     <span style={{ color: '#1e4a2a' }}>Total</span>
                     <span style={{ color: '#1e4a2a' }}>₹{order.total.toLocaleString('en-IN')}</span>
@@ -295,12 +298,15 @@ export default function AdminOrdersPage() {
                   <Package size={12} /> Items Ordered
                 </p>
                 <div className="space-y-2">
-                  {detailOrder.items.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-50 text-sm">
-                      <span className="text-gray-700">{item.name} <span className="text-gray-400">× {item.qty}</span></span>
-                      <span className="font-semibold text-gray-800">₹{(item.price * item.qty).toLocaleString('en-IN')}</span>
-                    </div>
-                  ))}
+                  {detailOrder.items.map((item, i) => {
+                    const qty = item.qty ?? item.quantity ?? 1;
+                    return (
+                      <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-50 text-sm">
+                        <span className="text-gray-700">{item.name} <span className="text-gray-400">× {qty}</span></span>
+                        <span className="font-semibold text-gray-800">₹{(item.price * qty).toLocaleString('en-IN')}</span>
+                      </div>
+                    );
+                  })}
                   <div className="flex justify-between font-bold text-base pt-2">
                     <span style={{ color: '#1e4a2a' }}>Total</span>
                     <span style={{ color: '#1e4a2a' }}>₹{detailOrder.total.toLocaleString('en-IN')}</span>

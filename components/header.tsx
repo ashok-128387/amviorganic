@@ -32,6 +32,8 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<{ name: string; sortOrder: number }[]>([]);
+  const visibleCategories = categories.filter(c => c.name !== 'Uncategorized');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +41,13 @@ export default function Header() {
 
   useEffect(() => {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => { if (p) setProducts(p); });
+    fetch('/api/categories-get').then(r => r.json()).then(({ categories: c }) => { if (c) setCategories(c); });
   }, []);
+
+  const categoryHref = (name: string) => {
+    const dedicated: Record<string, string> = { Sweeteners: '/sweeteners', 'Combo Deals': '/combo-deals', New: '/new' };
+    return dedicated[name] ?? `/products?category=${encodeURIComponent(name)}`;
+  };
 
   const hasNew = products.some(p => p.category === 'New');
 
@@ -127,32 +135,16 @@ export default function Header() {
                     onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                     onClick={() => setProductsOpen(false)}>All Products</Link>
-                  <Link href="/sweeteners" className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
-                    style={{ color: '#2e2e2e', borderBottom: '1px solid #f0ece6' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; e.currentTarget.style.color = '#1e4a2a'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2e2e'; }}
-                    onClick={() => setProductsOpen(false)}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1e4a2a', display: 'inline-block', flexShrink: 0 }} />
-                    Sweeteners
-                  </Link>
-                  <Link href="/combo-deals" className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
-                    style={{ color: '#2e2e2e', borderBottom: hasNew ? '1px solid #f0ece6' : 'none' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; e.currentTarget.style.color = '#1e4a2a'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2e2e'; }}
-                    onClick={() => setProductsOpen(false)}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c8922a', display: 'inline-block', flexShrink: 0 }} />
-                    Combo Deals
-                  </Link>
-                  {hasNew && (
-                    <Link href="/new" className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
-                      style={{ color: '#2e2e2e' }}
+                  {visibleCategories.map((cat, i) => (
+                    <Link key={cat.name} href={categoryHref(cat.name)} className="flex items-center gap-2 px-4 py-3 text-sm transition-colors duration-150"
+                      style={{ color: '#2e2e2e', borderBottom: i < visibleCategories.length - 1 ? '1px solid #f0ece6' : 'none' }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#f5f2ed'; e.currentTarget.style.color = '#1e4a2a'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2e2e'; }}
                       onClick={() => setProductsOpen(false)}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#15803d', display: 'inline-block', flexShrink: 0 }} />
-                      New
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1e4a2a', display: 'inline-block', flexShrink: 0 }} />
+                      {cat.name}
                     </Link>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -266,7 +258,11 @@ export default function Header() {
 
             {isLoggedIn ? (
               <div className="hidden sm:flex items-center gap-2 ml-1">
-                <span className="text-xs" style={{ color: '#1e4a2a' }}>{user?.name}</span>
+                <Link href="/account" className="text-xs font-semibold px-3 py-1.5 rounded-md transition" style={{ color: '#1e4a2a' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(30,74,42,0.08)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  {user?.name || 'Account'}
+                </Link>
                 <button onClick={logout} className="p-2 rounded-md" style={{ color: '#1e4a2a' }}
                   onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
                   onMouseLeave={e => (e.currentTarget.style.color = '#1e4a2a')} title="Logout">
@@ -307,17 +303,11 @@ export default function Header() {
               {mobileProductsOpen && (
                 <div className="ml-4 mt-1 space-y-1">
                   <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-semibold" style={{ color: '#1e4a2a' }}>All Products</Link>
-                  <Link href="/sweeteners" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#1e4a2a', display: 'inline-block' }} />Sweeteners
-                  </Link>
-                  <Link href="/combo-deals" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c8922a', display: 'inline-block' }} />Combo Deals
-                  </Link>
-                  {hasNew && (
-                    <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#15803d', display: 'inline-block' }} />New
+                  {visibleCategories.map(cat => (
+                    <Link key={cat.name} href={categoryHref(cat.name)} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#1e4a2a', display: 'inline-block' }} />{cat.name}
                     </Link>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -329,6 +319,7 @@ export default function Header() {
             <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>Wishlist</Link>
             {isLoggedIn ? (
               <>
+                <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm font-semibold" style={{ color: '#1e4a2a' }}>My Account</Link>
                 <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-sm" style={{ color: '#1e4a2a' }}>My Orders</Link>
                 <button onClick={logout} className="block px-3 py-2 rounded-md text-sm w-full text-left" style={{ color: '#f87171' }}>Logout</button>
               </>

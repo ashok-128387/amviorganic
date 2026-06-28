@@ -12,6 +12,7 @@ interface OrderItem {
   productId: string;
   variationId: string;
   quantity: number;
+  qty: number;
   price: number;
   name?: string;
 }
@@ -91,7 +92,7 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Order ID</p>
                         <p className="font-bold text-gray-900">
-                          {order.id.slice(0, 8).toUpperCase()}
+                          {order.id.toUpperCase()}
                         </p>
                       </div>
                       <div>

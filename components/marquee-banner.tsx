@@ -4,38 +4,40 @@ import { useEffect, useState } from 'react';
 
 export default function MarqueeBanner() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [threshold, setThreshold] = useState(999);
+
+  useEffect(() => {
+    setMounted(true);
+    fetch('/api/settings-get')
+      .then(r => r.json())
+      .then(({ settings }) => {
+        if (settings?.freeShippingThreshold) {
+          setThreshold(Number(settings.freeShippingThreshold));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   if (!mounted) return <div style={{ background: '#1e4a2a', height: '37px' }} />;
+
+  const items = [
+    <span key="1"><span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹{threshold} <span className="marquee-sep">|</span> Use code <strong>WELCOME10</strong> for 10% off</span>,
+    <span key="2"><span className="marquee-dot"></span>&nbsp; 100% Natural &amp; Organic Jaggery Products <span className="marquee-sep">|</span> FREE SHIPPING on orders above ₹{threshold}</span>,
+    <span key="3"><span className="marquee-dot"></span>&nbsp; Use code <strong>WELCOME10</strong> for 10% off your first order</span>,
+    <span key="4"><span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹{threshold} <span className="marquee-sep">|</span> COD Available</span>,
+  ];
 
   return (
     <div className="marquee-wrap">
       <div className="marquee-track">
         {/* First set */}
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹999 <span className="marquee-sep">|</span> Use code <strong>WELCOME10</strong> for 10% off
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; 100% Natural &amp; Organic Jaggery Products <span className="marquee-sep">|</span> FREE SHIPPING on orders above ₹999
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; Use code <strong>WELCOME10</strong> for 10% off your first order
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹999 <span className="marquee-sep">|</span> COD Available
-        </div>
+        {items.map((item, i) => (
+          <div key={`a-${i}`} className="marquee-item">{item}</div>
+        ))}
         {/* Duplicate set for seamless loop */}
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹999 <span className="marquee-sep">|</span> Use code <strong>WELCOME10</strong> for 10% off
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; 100% Natural &amp; Organic Jaggery Products <span className="marquee-sep">|</span> FREE SHIPPING on orders above ₹999
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; Use code <strong>WELCOME10</strong> for 10% off your first order
-        </div>
-        <div className="marquee-item">
-          <span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹999 <span className="marquee-sep">|</span> COD Available
-        </div>
+        {items.map((item, i) => (
+          <div key={`b-${i}`} className="marquee-item">{item}</div>
+        ))}
       </div>
 
       <style jsx>{`

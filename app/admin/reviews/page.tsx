@@ -6,7 +6,7 @@ import { Trash2, Check, Star, Plus, X, Save, Edit2 } from 'lucide-react';
 
 const FILTERS = ['all', 'pending', 'approved'] as const;
 
-const EMPTY_FORM = { customerName: '', email: '', productName: '', rating: 5, title: '', comment: '' };
+const EMPTY_FORM = { customerName: '', email: '', productName: '', rating: 5, title: '', comment: '', verifiedPurchase: false };
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -43,6 +43,7 @@ export default function AdminReviewsPage() {
       title: form.title,
       comment: form.comment,
       approved: false,
+      verifiedPurchase: form.verifiedPurchase,
       createdAt: new Date().toISOString(),
     };
     await fetch('/api/review-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
@@ -59,7 +60,7 @@ export default function AdminReviewsPage() {
 
   const startEdit = (r: ProductReview) => {
     setEditId(r.id);
-    setEditForm({ customerName: r.customerName, email: r.email, rating: r.rating, title: r.title, comment: r.comment });
+    setEditForm({ customerName: r.customerName, email: r.email, rating: r.rating, title: r.title, comment: r.comment, verifiedPurchase: r.verifiedPurchase });
   };
 
   const saveEdit = async () => {
@@ -138,6 +139,13 @@ export default function AdminReviewsPage() {
                 ))}
               </div>
 
+              <label className="col-span-2 flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={form.verifiedPurchase}
+                  onChange={e => setForm(f => ({ ...f, verifiedPurchase: e.target.checked }))}
+                  className="rounded border-gray-300 text-green-700 focus:ring-green-700" />
+                Verified Purchase
+              </label>
+
               <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="Review Title" className="col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700" />
               <textarea value={form.comment} onChange={e => setForm(f => ({ ...f, comment: e.target.value }))}
@@ -179,6 +187,11 @@ export default function AdminReviewsPage() {
                     <p className="text-xs text-gray-400">{r.email}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {r.verifiedPurchase && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+                        Verified
+                      </span>
+                    )}
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${r.approved ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
                       {r.approved ? 'Approved' : 'Pending'}
                     </span>
@@ -207,6 +220,12 @@ export default function AdminReviewsPage() {
                         </button>
                       ))}
                     </div>
+                    <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={editForm.verifiedPurchase ?? r.verifiedPurchase}
+                        onChange={e => setEditForm(f => ({ ...f, verifiedPurchase: e.target.checked }))}
+                        className="rounded border-gray-300 text-green-700 focus:ring-green-700" />
+                      Verified Purchase
+                    </label>
                     <input value={editForm.title ?? ''} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
                       className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-700" placeholder="Title" />
                     <textarea value={editForm.comment ?? ''} onChange={e => setEditForm(f => ({ ...f, comment: e.target.value }))}
