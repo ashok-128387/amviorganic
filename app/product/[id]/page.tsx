@@ -43,6 +43,15 @@ export default function ProductPage({ params }: ProductPageProps) {
       if (reviews) setProductReviews(reviews.filter((r: any) => r.productId === id && r.approved));
     });
 
+  const loadProduct = () =>
+    fetch('/api/products-get').then(r => r.json()).then(({ products }) => {
+      if (products) {
+        const updated = products.find((p: any) => p.id === id) ?? null;
+        setProduct(updated);
+        setAllProducts(products);
+      }
+    });
+
   const { addToCart, isInWishlist, addToWishlist, removeFromWishlist, setCartOpen, user, isLoggedIn } = useStore();
   const { adminLoggedIn } = useAdminStore();
 
@@ -51,19 +60,20 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [reviewerName, setReviewerName] = useState(user?.name || '');
   useEffect(() => {
     if (!isLoggedIn || !user?.email) return;
+    const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'completed'];
     fetch(`/api/orders-get?email=${encodeURIComponent(user.email)}`)
       .then(r => r.json())
       .then(({ orders: userOrders }) => {
         if (!userOrders) return;
         const purchased = userOrders.some((o: any) =>
-          ['pending','processing','shipped','delivered','completed'].includes(o.status) &&
-          o.items?.some((item: any) => item.productId === id)
+          allowedStatuses.includes(typeof o.status === 'string' ? o.status.toLowerCase() : o.status) &&
+          o.items?.some((item: any) => (item.productId || item.id || '').toString() === id.toString())
         );
         setCanReview(purchased);
         // Use billing name from most recent matching order
         const matchingOrder = userOrders.find((o: any) =>
-          ['pending','processing','shipped','delivered','completed'].includes(o.status) &&
-          o.items?.some((item: any) => item.productId === id)
+          allowedStatuses.includes(typeof o.status === 'string' ? o.status.toLowerCase() : o.status) &&
+          o.items?.some((item: any) => (item.productId || item.id || '').toString() === id.toString())
         );
         if (matchingOrder?.customerName) setReviewerName(matchingOrder.customerName);
         else if (user?.name) setReviewerName(user.name);
@@ -103,6 +113,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       setRating(5);
       setReviewMessage('Thank you! Your review has been submitted.');
       loadReviews();
+      loadProduct();
     } else {
       setReviewMessage(data.error || 'Failed to submit review. Please try again.');
     }

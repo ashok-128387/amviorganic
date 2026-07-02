@@ -6,10 +6,9 @@ export async function GET() {
     await initDb();
     const result = await db.execute({
       sql: `
-        SELECT p.*, c.sort_order as cat_order
+        SELECT p.*
         FROM products p
-        LEFT JOIN categories c ON p.category = c.name
-        ORDER BY c.sort_order ASC, p.sort_order ASC, p.created_at ASC
+        ORDER BY p.sort_order ASC, p.created_at ASC
       `,
       args: [],
     });

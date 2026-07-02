@@ -12,6 +12,18 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Verify the reviewer is a registered customer
+    const userResult = await db.execute({
+      sql: 'SELECT id FROM users WHERE email = ?',
+      args: [normalizedEmail],
+    });
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Please register an account with this email before leaving a review.' },
+        { status: 403 }
+      );
+    }
+
     // Verify purchase: find an order containing this product with a non-cancelled status
     const ordersResult = await db.execute({
       sql: `SELECT customer_name, items FROM orders
@@ -25,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     for (const row of ordersResult.rows) {
       const items = JSON.parse(row.items as string || '[]');
-      if (items.some((item: any) => (item.productId || item.id) === productId)) {
+      if (items.some((item: any) => (item.productId || item.id || '').toString() === productId.toString())) {
         verified = true;
         if (!customerName && row.customer_name) customerName = row.customer_name as string;
         break;

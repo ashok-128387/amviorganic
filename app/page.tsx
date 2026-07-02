@@ -111,32 +111,19 @@ function CustomerReviewsCarousel() {
       .then(({ reviews: data }) => {
         if (data && data.length > 0) {
           const approved = data.filter((r: any) => r.approved);
-          if (approved.length > 0) {
-            setReviews(approved.map((r: any, i: number) => ({
-              text: r.comment,
-              name: r.customerName,
-              initial: r.customerName?.[0]?.toUpperCase() || 'A',
-              gradient: gradients[i % gradients.length],
-              rating: r.rating || 5,
-            })));
-            return;
-          }
+          setReviews(approved.map((r: any, i: number) => ({
+            text: r.comment,
+            name: r.customerName,
+            initial: r.customerName?.[0]?.toUpperCase() || 'A',
+            gradient: gradients[i % gradients.length],
+            rating: r.rating || 5,
+          })));
+        } else {
+          setReviews([]);
         }
-        // Fallback static testimonials if no approved reviews yet
-        setReviews([
-          { text: "The organic jaggery cubes are amazing! Perfect sweetness without any chemicals. My family loves using them in tea and desserts. Highly recommend!", name: "Priya Sharma", initial: "P", gradient: gradients[0], rating: 5 },
-          { text: "AMVI Organics jaggery powder has become a staple in my kitchen. The quality is outstanding and it dissolves perfectly in milk and sweets.", name: "Rajesh Kumar", initial: "R", gradient: gradients[1], rating: 5 },
-          { text: "Love the liquid jaggery! It's so convenient to use and the taste is incredibly pure. My children prefer it over regular sugar now.", name: "Meera Patel", initial: "M", gradient: gradients[2], rating: 5 },
-          { text: "The masala jaggery cubes are a game changer! Perfect blend of spices and sweetness. Great for making traditional Indian sweets.", name: "Dr. Anjali Verma", initial: "A", gradient: gradients[3], rating: 5 },
-          { text: "Excellent quality jaggery products! I can taste the difference - it's so natural and pure. Will definitely keep ordering from AMVI Organics.", name: "Sanjay Gupta", initial: "S", gradient: gradients[4], rating: 5 },
-          { text: "The jaggery powder jar is perfect for daily use. Easy to store and the quality remains fresh for months. Authentic taste guaranteed!", name: "Kavya Reddy", initial: "K", gradient: gradients[5], rating: 5 },
-        ]);
       })
       .catch(() => {
-        setReviews([
-          { text: "The organic jaggery cubes are amazing! Perfect sweetness without any chemicals. My family loves using them in tea and desserts. Highly recommend!", name: "Priya Sharma", initial: "P", gradient: gradients[0], rating: 5 },
-          { text: "AMVI Organics jaggery powder has become a staple in my kitchen. The quality is outstanding and it dissolves perfectly in milk and sweets.", name: "Rajesh Kumar", initial: "R", gradient: gradients[1], rating: 5 },
-        ]);
+        setReviews([]);
       });
   }, []);
 
@@ -171,6 +158,8 @@ function CustomerReviewsCarousel() {
   const handleNext = () => {
     goTo(currentIndex + 1);
   };
+
+  if (reviews.length === 0) return null;
 
   return (
     <>

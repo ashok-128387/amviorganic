@@ -29,8 +29,7 @@ export default function AllProductsPage() {
 
   const filtered = useMemo(() => {
     if (!filters) return [];
-    const allSelected = allCategories.length > 0 && allCategories.every(c => filters.categories.includes(c));
-    let list = allProducts.filter((p) => filters.categories.includes(p.category) || (allSelected && p.category === 'Uncategorized'));
+    let list = allProducts.filter((p) => filters.categories.includes(p.category) && p.category !== 'Uncategorized');
     list = list.filter((p) => Math.min(...p.variations.map((v) => v.price)) <= filters.maxPrice);
     if (filters.sort === 'price-asc') list = [...list].sort((a, b) => Math.min(...a.variations.map(v => v.price)) - Math.min(...b.variations.map(v => v.price)));
     if (filters.sort === 'price-desc') list = [...list].sort((a, b) => Math.min(...b.variations.map(v => v.price)) - Math.min(...a.variations.map(v => v.price)));
