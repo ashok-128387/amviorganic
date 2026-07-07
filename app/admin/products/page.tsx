@@ -109,7 +109,8 @@ export default function AdminProductsPage() {
       sortOrder: form.sortOrder ?? existing?.sortOrder ?? 0,
       createdAt: existing?.createdAt ?? new Date(),
     };
-    await fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: product.createdAt.toISOString() }) });
+    const createdAtStr = product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt;
+    await fetch('/api/product-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...product, createdAt: createdAtStr }) });
     await loadProducts();
     setShowForm(false);
   };
