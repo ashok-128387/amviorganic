@@ -93,31 +93,31 @@ export default function BannerSlider() {
 
       <style jsx>{`
         .banner-section {
-          height: 220px;
+          height: 260px;
         }
         @media (min-width: 640px) {
           .banner-section {
-            height: 320px;
+            height: 380px;
           }
         }
         @media (min-width: 768px) {
           .banner-section {
-            height: 420px;
+            height: 480px;
           }
         }
         @media (min-width: 1024px) {
           .banner-section {
-            height: 520px;
+            height: 580px;
           }
         }
         @media (min-width: 1280px) {
           .banner-section {
-            height: 600px;
+            height: 680px;
           }
         }
         @media (min-width: 1536px) {
           .banner-section {
-            height: 650px;
+            height: 750px;
           }
         }
       `}</style>
