@@ -5,6 +5,7 @@ import { AdminProduct } from '@/lib/admin-store';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { getVariationStock, isVariationOutOfStock } from '@/lib/inventory';
 
 export default function CartDrawer() {
   const { cartOpen, setCartOpen, cart, removeFromCart, updateCartQuantity } = useStore();
@@ -77,15 +78,18 @@ export default function CartDrawer() {
                 const product = products.find((p) => p.id === item.productId);
                 const variation = product?.variations.find((v) => v.id === item.variationId);
                 if (!product || !variation) return null;
+                const stock = getVariationStock(product, variation.id);
+                const outOfStock = isVariationOutOfStock(product, variation.id);
 
                 return (
-                  <div key={item.id} className="flex gap-3 p-3 rounded-xl" style={{ background: '#fff', border: '1px solid #ede8e0', boxShadow: '0 1px 6px rgba(30,74,42,0.05)' }}>
+                  <div key={item.id} className={`flex gap-3 p-3 rounded-xl ${outOfStock ? 'opacity-70' : ''}`} style={{ background: '#fff', border: outOfStock ? '1px solid #fecaca' : '1px solid #ede8e0', boxShadow: '0 1px 6px rgba(30,74,42,0.05)' }}>
                     <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg flex-shrink-0" style={{ border: '1.5px solid #ede8e0' }} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm truncate" style={{ color: '#1e4a2a' }}>{product.name}</p>
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium inline-block mt-0.5" style={{ background: '#f0faf2', color: '#1e4a2a' }}>
                         {variation.name}
                       </span>
+                      {outOfStock && <span className="ml-2 text-xs font-bold text-red-600">Out of Stock</span>}
                       <p className="font-bold text-sm mt-1" style={{ color: '#c8922a' }}>₹{(variation.price * item.quantity).toLocaleString('en-IN')}</p>
 
                       <div className="flex items-center gap-2 mt-2">
@@ -97,8 +101,9 @@ export default function CartDrawer() {
                             <Minus size={12} />
                           </button>
                           <span className="px-3 text-sm font-bold" style={{ color: '#1e4a2a' }}>{item.quantity}</span>
-                          <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                            className="px-2.5 py-1 text-sm font-bold transition" style={{ color: '#1e4a2a' }}
+                          <button onClick={() => updateCartQuantity(item.id, Math.min(stock, item.quantity + 1))}
+                            disabled={outOfStock || item.quantity >= stock}
+                            className="px-2.5 py-1 text-sm font-bold transition disabled:opacity-50" style={{ color: '#1e4a2a' }}
                             onMouseEnter={e => (e.currentTarget.style.background = '#f0faf2')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             <Plus size={12} />

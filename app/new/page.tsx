@@ -5,7 +5,7 @@ import ProductCard from '@/components/product-card';
 import CartDrawer from '@/components/cart-drawer';
 import ProductsSidebar, { FilterState, SortOption } from '@/components/products-sidebar';
 
-const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals', 'New'];
+const ALL_CATEGORIES = ['Sweeteners', 'Combo Deals'];
 const PRICE_MAX = 1000;
 
 export default function NewProductsPage() {
@@ -18,9 +18,9 @@ export default function NewProductsPage() {
 
   const products = useMemo(() => {
     let list = allProducts.filter((p) => filters.categories.includes(p.category));
-    list = list.filter((p) => Math.min(...p.variations.map((v) => v.price)) <= filters.maxPrice);
-    if (filters.sort === 'price-asc') list = [...list].sort((a, b) => Math.min(...a.variations.map(v => v.price)) - Math.min(...b.variations.map(v => v.price)));
-    if (filters.sort === 'price-desc') list = [...list].sort((a, b) => Math.min(...b.variations.map(v => v.price)) - Math.min(...a.variations.map(v => v.price)));
+    list = list.filter((p: any) => Math.min(...p.variations.map((v: any) => v.price)) <= filters.maxPrice);
+    if (filters.sort === 'price-asc') list = [...list].sort((a: any, b: any) => Math.min(...a.variations.map((v: any) => v.price)) - Math.min(...b.variations.map((v: any) => v.price)));
+    if (filters.sort === 'price-desc') list = [...list].sort((a: any, b: any) => Math.min(...b.variations.map((v: any) => v.price)) - Math.min(...a.variations.map((v: any) => v.price)));
     if (filters.sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
     if (filters.sort === 'popular') list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
     return list;

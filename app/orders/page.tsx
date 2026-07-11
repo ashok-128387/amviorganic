@@ -2,8 +2,8 @@
 
 import CartDrawer from '@/components/cart-drawer';
 import { useStore } from '@/lib/store';
-import { AdminProduct } from '@/lib/admin-store';
 import { useRouter } from 'next/navigation';
+import { AdminProduct } from '@/lib/admin-store';
 import Link from 'next/link';
 import { Package, ArrowLeft, CheckCircle, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -33,7 +33,7 @@ interface DbOrder {
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { isLoggedIn, user } = useStore();
+  const { isLoggedIn, user, addToCart, setCartOpen } = useStore();
   const [orders, setOrders] = useState<DbOrder[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
 
@@ -178,18 +178,35 @@ export default function OrdersPage() {
 
                   {/* Actions */}
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex gap-4">
-                    <button className="text-green-700 font-semibold hover:text-green-800 transition">
-                      Track Order
-                    </button>
-                    <button className="text-gray-600 font-semibold hover:text-gray-800 transition">
+                    {order.trackingId ? (
+                      <Link href={`/track-order?trackingId=${encodeURIComponent(order.trackingId)}`}
+                        className="text-green-700 font-semibold hover:text-green-800 transition">
+                        Track Order
+                      </Link>
+                    ) : (
+                      <Link href="/track-order"
+                        className="text-gray-400 font-semibold hover:text-gray-600 transition">
+                        Track Order
+                      </Link>
+                    )}
+                    <Link href="/contact" className="text-gray-600 font-semibold hover:text-gray-800 transition">
                       Contact Support
-                    </button>
-                    <Link
-                      href="/"
+                    </Link>
+                    <button
+                      onClick={() => {
+                        order.items.forEach((item) => {
+                          const product = products.find((p) => p.id === item.productId);
+                          const variation = product?.variations.find((v) => v.id === item.variationId);
+                          if (product && variation && (variation.stock ?? 0) > 0) {
+                            addToCart({ id: Math.random().toString(), productId: product.id, variationId: variation.id, quantity: Math.min(item.quantity ?? item.qty ?? 1, variation.stock ?? 1), addedAt: new Date() });
+                          }
+                        });
+                        setCartOpen(true);
+                      }}
                       className="text-blue-700 font-semibold hover:text-blue-800 transition"
                     >
                       Reorder
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))}

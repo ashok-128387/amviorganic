@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 export default function MarqueeBanner() {
   const [mounted, setMounted] = useState(false);
   const [threshold, setThreshold] = useState(999);
+  const [announcementText, setAnnouncementText] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -14,14 +15,21 @@ export default function MarqueeBanner() {
         if (settings?.freeShippingThreshold) {
           setThreshold(Number(settings.freeShippingThreshold));
         }
+        if (settings?.announcementText) {
+          setAnnouncementText(String(settings.announcementText));
+        }
       })
       .catch(() => {});
   }, []);
 
   if (!mounted) return <div style={{ background: '#1e4a2a', height: '37px' }} />;
 
+  const text = announcementText
+    ? announcementText.replace(/\{threshold\}/g, threshold.toString())
+    : `FREE SHIPPING on orders above ₹${threshold} | Use code WELCOME10 for 10% OFF`;
+
   const items = [
-    <span key="1"><span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹{threshold} <span className="marquee-sep">|</span> Use code <strong>WELCOME10</strong> for 10% off</span>,
+    <span key="1"><span className="marquee-dot"></span>&nbsp; {text}</span>,
     <span key="2"><span className="marquee-dot"></span>&nbsp; 100% Natural &amp; Organic Jaggery Products <span className="marquee-sep">|</span> FREE SHIPPING on orders above ₹{threshold}</span>,
     <span key="3"><span className="marquee-dot"></span>&nbsp; Use code <strong>WELCOME10</strong> for 10% off your first order</span>,
     <span key="4"><span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹{threshold} <span className="marquee-sep">|</span> COD Available</span>,

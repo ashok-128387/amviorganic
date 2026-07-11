@@ -70,6 +70,9 @@ export default function AdminBannersPage() {
       <div>
         <h1 className="text-xl font-bold text-gray-900">Homepage Banners</h1>
         <p className="text-sm text-gray-500">Add, replace, reorder or remove website banner images.</p>
+        <p className="text-xs text-gray-400 mt-1">
+          Recommended: 1920 × 540 px (or 16:9 to 3.5:1 ratio), max 1 MB, WebP or JPEG for best quality.
+        </p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

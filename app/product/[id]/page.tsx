@@ -3,6 +3,7 @@
 import CartDrawer from '@/components/cart-drawer';
 import { AdminProduct, useAdminStore } from '@/lib/admin-store';
 import { useStore } from '@/lib/store';
+import { getVariationStock, isVariationOutOfStock } from '@/lib/inventory';
 import { Heart, Copy, ShoppingCart, Pencil, Star, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use, useEffect } from 'react';
@@ -203,10 +204,13 @@ export default function ProductPage({ params }: ProductPageProps) {
   );
 
   if (!selectedVariation && product.variations.length > 0) {
-    setSelectedVariation(product.variations[0]);
+    const inStockVariation = product.variations.find((v: any) => (v.stock ?? 0) > 0);
+    setSelectedVariation(inStockVariation || product.variations[0]);
   }
 
   const variation = selectedVariation ?? product.variations[0];
+  const variationStock = variation ? getVariationStock(product, variation.id) : 0;
+  const outOfStock = variation ? isVariationOutOfStock(product, variation.id) : true;
   const inWishlist = isInWishlist(product.id);
   const images = product.images?.length ? product.images : product.image ? [product.image] : [];
 
@@ -376,7 +380,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {images.length > 1 && (
                 <div className="flex gap-2 flex-wrap">
-                  {images.map((src, i) => (
+                  {images.map((src: string, i: number) => (
                     <button key={i} onClick={() => setActiveImg(i)}
                       className="w-20 h-20 rounded-xl overflow-hidden transition"
                       style={{ border: i === activeImg ? '2.5px solid #1e4a2a' : '2px solid #e5e5e5' }}>
@@ -435,19 +439,32 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Choose Weight / Size</p>
                 <div className="flex flex-wrap gap-2">
-                  {product.variations.map((v) => (
-                    <button key={v.id} onClick={() => setSelectedVariation(v)}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold transition"
-                      style={{
-                        background: variation.id === v.id ? '#1e4a2a' : '#fff',
-                        color: variation.id === v.id ? '#fff' : '#333',
-                        border: `1.5px solid ${variation.id === v.id ? '#1e4a2a' : '#ddd'}`,
-                      }}>
-                      {v.name}
-                      <span className="ml-1.5 text-xs opacity-80">₹{v.price}</span>
-                    </button>
-                  ))}
+                  {product.variations.map((v: any) => {
+                    const vOut = (v.stock ?? 0) <= 0;
+                    return (
+                      <button key={v.id} onClick={() => { setSelectedVariation(v); setQuantity(1); }}
+                        disabled={vOut}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          background: variation.id === v.id ? '#1e4a2a' : '#fff',
+                          color: variation.id === v.id ? '#fff' : vOut ? '#9ca3af' : '#333',
+                          border: `1.5px solid ${variation.id === v.id ? '#1e4a2a' : vOut ? '#e5e7eb' : '#ddd'}`,
+                        }}>
+                        {v.name}
+                        <span className="ml-1.5 text-xs opacity-80">₹{v.price}</span>
+                        {vOut && <span className="ml-1.5 text-xs">(Out of Stock)</span>}
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+
+              {/* Stock status */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className={`inline-block w-2 h-2 rounded-full ${outOfStock ? 'bg-red-500' : variationStock < 10 ? 'bg-amber-500' : 'bg-green-600'}`} />
+                <span className={outOfStock ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                  {outOfStock ? 'Out of Stock' : variationStock < 10 ? `Only ${variationStock} left` : `In Stock (${variationStock} available)`}
+                </span>
               </div>
 
               {/* Quantity + Add to Cart row */}
@@ -456,24 +473,27 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <button onClick={() => setQuantity(q => Math.max(1, q - 1))}
                     className="px-3.5 py-2.5 text-lg font-bold hover:bg-gray-50 transition" style={{ color: '#1e4a2a' }}>−</button>
                   <span className="px-4 py-2.5 font-semibold text-gray-900 border-x border-gray-200 text-sm">{quantity}</span>
-                  <button onClick={() => setQuantity(q => q + 1)}
-                    className="px-3.5 py-2.5 text-lg font-bold hover:bg-gray-50 transition" style={{ color: '#1e4a2a' }}>+</button>
+                  <button onClick={() => setQuantity(q => outOfStock ? q : Math.min(variationStock, q + 1))}
+                    disabled={outOfStock}
+                    className="px-3.5 py-2.5 text-lg font-bold hover:bg-gray-50 transition disabled:opacity-50" style={{ color: '#1e4a2a' }}>+</button>
                 </div>
                 <button onClick={handleAddToCart}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition"
-                  style={{ background: addedMsg ? '#2a6b3e' : '#fff', color: addedMsg ? '#fff' : '#1e4a2a', border: '1.5px solid #1e4a2a' }}>
+                  disabled={outOfStock}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ background: addedMsg ? '#2a6b3e' : outOfStock ? '#9ca3af' : '#fff', color: addedMsg || outOfStock ? '#fff' : '#1e4a2a', border: '1.5px solid #1e4a2a' }}>
                   <ShoppingCart size={16} />
-                  {addedMsg ? 'Added to Cart!' : 'Add to Cart'}
+                  {outOfStock ? 'Out of Stock' : addedMsg ? 'Added to Cart!' : 'Add to Cart'}
                 </button>
               </div>
 
               {/* Buy Now full width */}
               <button onClick={handleBuyNow}
-                className="w-full py-3 rounded-xl font-bold text-sm text-white transition"
+                disabled={outOfStock}
+                className="w-full py-3 rounded-xl font-bold text-sm text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: '#1e4a2a' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#2a6b3e')}
+                onMouseEnter={e => !outOfStock && (e.currentTarget.style.background = '#2a6b3e')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#1e4a2a')}>
-                Buy it Now →
+                {outOfStock ? 'Out of Stock' : 'Buy it Now →'}
               </button>
 
               {/* Trust badges row */}
@@ -692,8 +712,7 @@ function AccordionSection({ sec, defaultOpen = false }: { sec: { heading: string
   const plainText = isInfo ? [] : sec.text;
 
   const icon =
-    /health/i.test(sec.heading) ? '💚' :
-    /how to use/i.test(sec.heading) ? '📖' :
+    /how to use|health/i.test(sec.heading) ? '📖' :
     /why choose/i.test(sec.heading) ? '⭐' :
     /what.s included/i.test(sec.heading) ? '📦' :
     /product information|compliance/i.test(sec.heading) ? '📋' : '🔹';
@@ -731,7 +750,7 @@ function AccordionSection({ sec, defaultOpen = false }: { sec: { heading: string
                 <div key={bi} className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5"
                   style={{ background: /health/i.test(sec.heading) ? '#f0faf2' : '#f5f2ed' }}>
                   <span className="text-base flex-shrink-0 mt-0.5">
-                    {/health/i.test(sec.heading) ? getBulletIcon(b) : '✦'}
+                    {'✦'}
                   </span>
                   <span className="text-sm text-gray-700 leading-snug">
                     {b.split(/\*\*(.*?)\*\*/).map((part, pi) =>

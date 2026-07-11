@@ -173,7 +173,7 @@ export default function ContactPage() {
             </form>
             <p className="mko-form-note">
               The address will be secured with otp on platform for checkouts. View
-              <a href="#">Terms and conditions</a> and <a href="#">privacy policy</a>.
+              <a href="/terms-of-service">Terms and conditions</a> and <a href="/privacy-policy">privacy policy</a>.
             </p>
           </div>
         </div>

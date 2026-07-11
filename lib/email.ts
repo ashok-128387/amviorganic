@@ -57,7 +57,7 @@ export async function sendOtpEmail(email: string, otp: string) {
       </div>
       <p style="color:#999;font-size:12px;margin:0">If you didn't request this, please ignore this email. Do not share this OTP with anyone.</p>
       <hr style="border:none;border-top:1px solid #f0ece6;margin:24px 0"/>
-      <p style="color:#bbb;font-size:11px;text-align:center;margin:0">© 2024 AMVI Organics · Mandya, Karnataka, India</p>
+      <p style="color:#bbb;font-size:11px;text-align:center;margin:0">© 2024 AMVI Organics</p>
     </div>
   `;
   return sendEmail({ to: email, subject: 'Your AMVI Organics Login OTP', html });
@@ -73,11 +73,11 @@ export async function sendWelcomeEmail(email: string, name: string) {
       </div>
       <h2 style="font-size:20px;color:#1a1a1a;margin:0 0 8px">Welcome, ${name}! 🌿</h2>
       <p style="color:#555;font-size:14px;line-height:1.7;margin:0 0 20px">
-        Thank you for joining AMVI Organics. You now have access to India's finest certified organic jaggery — sourced directly from farms in Mandya, Karnataka.
+        Thank you for joining AMVI Organics. You now have access to India's finest certified organic jaggery.
       </p>
       <a href="https://amviorganics.com/products" style="display:inline-block;background:#1e4a2a;color:#fff;padding:12px 28px;border-radius:24px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:24px">Shop Now →</a>
       <hr style="border:none;border-top:1px solid #f0ece6;margin:24px 0"/>
-      <p style="color:#bbb;font-size:11px;text-align:center;margin:0">© 2024 AMVI Organics · Mandya, Karnataka, India</p>
+      <p style="color:#bbb;font-size:11px;text-align:center;margin:0">© 2024 AMVI Organics</p>
     </div>
   `;
   return sendEmail({ to: email, subject: `Welcome to AMVI Organics, ${name}!`, html });
@@ -163,7 +163,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
         <p style="text-align:center;font-size:12px;color:#aaa;margin:0">Questions? Email us at <a href="mailto:contact@amviorganics.com" style="color:#1e4a2a">contact@amviorganics.com</a> or call +91-8748899100</p>
       </div>
       <div style="background:#f5f2ed;padding:16px;text-align:center">
-        <p style="color:#bbb;font-size:11px;margin:0">© 2024 AMVI Organics · Mandya, Karnataka, India</p>
+        <p style="color:#bbb;font-size:11px;margin:0">© 2024 AMVI Organics</p>
       </div>
     </div>
   `;

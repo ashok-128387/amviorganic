@@ -111,7 +111,7 @@ export default function Header() {
               priority
             />
             <div className="hidden sm:block leading-tight">
-              <p className="font-extrabold tracking-wide" style={{ color: '#1e4a2a', fontSize: '1.1rem' }}>Amvi Organics</p>
+              <p className="font-extrabold tracking-wide" style={{ color: '#1e4a2a', fontSize: '1.1rem' }}><strong>AMVI Organics</strong></p>
               <p className="tracking-widest" style={{ color: '#c8922a', fontSize: '0.6rem' }}>NATURE&apos;S TRUST, DELIVERED</p>
             </div>
           </Link>

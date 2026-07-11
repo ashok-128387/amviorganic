@@ -44,10 +44,18 @@ export default function BannerSlider() {
   if (banners.length === 0) return null;
 
   return (
-    <section className="banner-section relative w-full overflow-hidden" data-banner>
+    <section className="banner-section relative w-full overflow-hidden bg-[#f5f2ed]" data-banner>
       {banners.map((src, i) => (
         <div key={`${src}-${i}`} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
-          <Image src={src} alt={`Banner ${i + 1}`} fill className="object-cover object-center" priority={i === 0} sizes="100vw" />
+          <Image
+            src={src}
+            alt={`Banner ${i + 1}`}
+            fill
+            className="object-cover object-center"
+            priority={i === 0}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
+            quality={90}
+          />
         </div>
       ))}
 
@@ -93,31 +101,26 @@ export default function BannerSlider() {
 
       <style jsx>{`
         .banner-section {
-          height: 260px;
+          height: 220px;
         }
         @media (min-width: 640px) {
           .banner-section {
-            height: 380px;
+            height: 320px;
           }
         }
         @media (min-width: 768px) {
           .banner-section {
-            height: 480px;
+            height: 400px;
           }
         }
         @media (min-width: 1024px) {
           .banner-section {
-            height: 580px;
+            height: 480px;
           }
         }
         @media (min-width: 1280px) {
           .banner-section {
-            height: 680px;
-          }
-        }
-        @media (min-width: 1536px) {
-          .banner-section {
-            height: 750px;
+            height: 540px;
           }
         }
       `}</style>

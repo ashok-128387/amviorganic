@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product, mockProducts } from './mock-data';
+import { DEFAULT_POLICY_CONTENT } from './policies';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,6 +90,8 @@ export interface SiteSettings {
   taxPercent: number;
   shippingZones: Record<string, { baseRate: number; gstPercent: number; label: string }>;
   shippingPincodes: Record<string, string>;
+  announcementText: string;
+  policyContent: Record<string, string>;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -152,7 +155,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   storeName: 'AMVI Organics',
   contactEmail: 'contact@amviorganics.com',
   contactPhone: '+91-8748899100',
-  address: 'Mandya, Karnataka, India',
+  address: 'Bengaluru, Karnataka, India',
   instagramUrl: 'https://instagram.com/amviorganics',
   facebookUrl: 'https://facebook.com/amviorganics',
   whatsappNumber: '918748899100',
@@ -166,6 +169,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
     E: { baseRate: 69, gstPercent: 18, label: 'Special / Remote' },
   },
   shippingPincodes: {},
+  announcementText: 'FREE SHIPPING on orders above ₹{threshold} | Use code WELCOME10 for 10% OFF',
+  policyContent: DEFAULT_POLICY_CONTENT,
 };
 
 export const useAdminStore = create<AdminState>()(

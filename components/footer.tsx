@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface FooterSettings {
   contactEmail?: string;
@@ -11,8 +12,14 @@ interface FooterSettings {
   facebookUrl?: string;
 }
 
+const categoryHref = (name: string) => {
+  const dedicated: Record<string, string> = { Sweeteners: '/sweeteners', 'Combo Deals': '/combo-deals', New: '/new' };
+  return dedicated[name] ?? `/products?category=${encodeURIComponent(name)}`;
+};
+
 export default function Footer() {
   const [settings, setSettings] = useState<FooterSettings>({});
+  const [categories, setCategories] = useState<{ name: string; sortOrder: number }[]>([]);
 
   useEffect(() => {
     fetch('/api/settings-get')
@@ -21,12 +28,18 @@ export default function Footer() {
         if (s) setSettings(s);
       })
       .catch(() => {});
+    fetch('/api/categories-get')
+      .then(r => r.json())
+      .then(({ categories: c }) => {
+        if (c) setCategories(c.filter((cat: any) => cat.name && cat.name !== 'Uncategorized'));
+      })
+      .catch(() => {});
   }, []);
 
   const WHATSAPP_NUMBER = settings.whatsappNumber || '918748899100';
   const email = settings.contactEmail || 'contact@amviorganics.com';
   const phone = settings.contactPhone || '+91-8748899100';
-  const address = settings.address || 'Mandya, Karnataka, India';
+  const address = settings.address || 'Bengaluru, Karnataka, India';
 
   return (
     <footer style={{ background: 'linear-gradient(160deg, #0d2515 0%, #1a3d24 60%, #0d2515 100%)' }} className="text-white">
@@ -39,7 +52,7 @@ export default function Footer() {
             <div className="flex items-center gap-3 mb-4" style={{ marginLeft: '-8px' }}>
               <img src="/logo-footer.png" alt="AMVI Organics"
                 style={{ height: 80, width: 'auto', maxWidth: 200, objectFit: 'contain', display: 'block' }} loading="lazy" />
-              <p className="font-extrabold tracking-wide" style={{ color: '#e8b84b', fontSize: '1.1rem' }}>Amvi Organics</p>
+              <p className="font-extrabold tracking-wide" style={{ color: '#e8b84b', fontSize: '1.1rem' }}><strong>AMVI Organics</strong></p>
             </div>
             <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.65)' }}>
               Pure, certified organic jaggery — sourced directly from sugarcane farms and delivered to your doorstep.
@@ -114,11 +127,16 @@ export default function Footer() {
           <div className="md:col-span-2">
             <h4 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#e8b84b' }}>Products</h4>
             <ul className="space-y-3 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
-              {[['Jaggery Cubes', '/sweeteners'], ['Jaggery Powder', '/sweeteners'], ['Liquid Jaggery', '/sweeteners'], ['Masala Jaggery', '/sweeteners'], ['Combo Deals', '/combo-deals']].map(([label, href]) => (
-                <li key={label}><a href={href} className="transition-colors duration-200 hover:text-white flex items-center gap-1">
-                  <span style={{ color: '#c8922a', fontSize: '0.55rem' }}>▶</span> {label}
-                </a></li>
-              ))}
+              {categories.length > 0 ? categories.map((cat) => (
+                <li key={cat.name}><Link href={categoryHref(cat.name)} className="transition-colors duration-200 hover:text-white flex items-center gap-1">
+                  <span style={{ color: '#c8922a', fontSize: '0.55rem' }}>▶</span> {cat.name}
+                </Link></li>
+              )) : (
+                <>
+                  <li><Link href="/sweeteners" className="transition-colors duration-200 hover:text-white flex items-center gap-1"><span style={{ color: '#c8922a', fontSize: '0.55rem' }}>▶</span> Sweeteners</Link></li>
+                  <li><Link href="/combo-deals" className="transition-colors duration-200 hover:text-white flex items-center gap-1"><span style={{ color: '#c8922a', fontSize: '0.55rem' }}>▶</span> Combo Deals</Link></li>
+                </>
+              )}
             </ul>
           </div>
 

@@ -20,6 +20,34 @@ export async function POST(req: NextRequest) {
     const o = await req.json();
     if (!o.id || !o.email) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
 
+    // Validate and decrement stock for each ordered item
+    const items = o.items || [];
+    const stockUpdates: { productId: string; variations: any[] }[] = [];
+    for (const item of items) {
+      const productId = item.productId;
+      const variationId = item.variationId;
+      const qty = item.qty ?? item.quantity ?? 1;
+      if (!productId || !variationId) continue;
+
+      const result = await db.execute({ sql: 'SELECT variations FROM products WHERE id = ?', args: [productId] });
+      const row = result.rows[0];
+      if (!row) {
+        return NextResponse.json({ error: `Product ${productId} not found` }, { status: 400 });
+      }
+      let variations: any[] = [];
+      try { variations = JSON.parse(row.variations as string); } catch { variations = []; }
+      const variation = variations.find((v: any) => v.id === variationId);
+      if (!variation) {
+        return NextResponse.json({ error: `Variation not found for product ${productId}` }, { status: 400 });
+      }
+      const currentStock = variation.stock ?? 0;
+      if (currentStock < qty) {
+        return NextResponse.json({ error: `Insufficient stock for ${item.name || productId}. Available: ${currentStock}, requested: ${qty}` }, { status: 400 });
+      }
+      variation.stock = currentStock - qty;
+      stockUpdates.push({ productId, variations });
+    }
+
     // Normalize Razorpay status to admin workflow
     const status = o.status === 'completed' ? 'processing' : (o.status || 'pending');
 
@@ -38,6 +66,14 @@ export async function POST(req: NextRequest) {
       ],
     });
 
+    // Apply stock decrements after successful order insert
+    for (const update of stockUpdates) {
+      await db.execute({
+        sql: 'UPDATE products SET variations = ? WHERE id = ?',
+        args: [JSON.stringify(update.variations), update.productId],
+      });
+    }
+
     // Notify admin about the new order
     try {
       const adminEmail = await getAdminEmail();
@@ -46,7 +82,7 @@ export async function POST(req: NextRequest) {
         customerName: o.customerName ?? '',
         email: o.email,
         phone: o.phone ?? '',
-        items: (o.items || []).map((item: any) => ({
+        items: items.map((item: any) => ({
           name: item.name || 'Product',
           qty: item.qty ?? item.quantity ?? 1,
           price: item.price ?? 0,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AdminOrder } from '@/lib/admin-store';
+import { AdminOrder, AdminProduct } from '@/lib/admin-store';
 import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package, Download } from 'lucide-react';
 
 const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'completed'];
@@ -22,6 +22,7 @@ export default function AdminOrdersPage() {
   const [detailOrder, setDetailOrder] = useState<AdminOrder | null>(null);
   const [trackingInput, setTrackingInput] = useState('');
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
 
   const load = () =>
     fetch('/api/orders-get')
@@ -30,7 +31,18 @@ export default function AdminOrdersPage() {
         if (data) setOrders(data);
       });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch('/api/products-get')
+      .then(r => r.json())
+      .then(({ products: data }) => { if (data) setProducts(data); });
+  }, []);
+
+  const getSku = (productId?: string) => {
+    if (!productId) return '-';
+    const product = products.find(p => p.id === productId);
+    return product?.sku || `AMVI-${productId}`;
+  };
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
@@ -208,7 +220,7 @@ export default function AdminOrdersPage() {
                     const qty = item.qty ?? item.quantity ?? 1;
                     return (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{item.name} × {qty}</span>
+                        <span className="text-gray-700">{item.name} <span className="text-xs text-gray-400">(SKU: {getSku(item.productId)})</span> × {qty}</span>
                         <span className="font-semibold text-gray-800">₹{(item.price * qty).toLocaleString('en-IN')}</span>
                       </div>
                     );
@@ -302,7 +314,10 @@ export default function AdminOrdersPage() {
                     const qty = item.qty ?? item.quantity ?? 1;
                     return (
                       <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-50 text-sm">
-                        <span className="text-gray-700">{item.name} <span className="text-gray-400">× {qty}</span></span>
+                        <span className="text-gray-700">
+                          {item.name}
+                          <span className="block text-xs text-gray-400">SKU: {getSku(item.productId)} · Qty: {qty}</span>
+                        </span>
                         <span className="font-semibold text-gray-800">₹{(item.price * qty).toLocaleString('en-IN')}</span>
                       </div>
                     );

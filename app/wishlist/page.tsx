@@ -4,6 +4,7 @@ import CartDrawer from '@/components/cart-drawer';
 import { useStore } from '@/lib/store';
 import { AdminProduct } from '@/lib/admin-store';
 import { Trash2, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { isProductOutOfStock, getVariationStock } from '@/lib/inventory';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -22,10 +23,15 @@ export default function WishlistPage() {
   const handleAddToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (product) {
+      const variation = product.variations.find(v => (v.stock ?? 0) > 0) || product.variations[0];
+      if (!variation || (variation.stock ?? 0) <= 0) {
+        alert('This product is currently out of stock.');
+        return;
+      }
       addToCart({
         id: Math.random().toString(),
         productId,
-        variationId: product.variations[0].id,
+        variationId: variation.id,
         quantity: 1,
         addedAt: new Date(),
       });
@@ -90,8 +96,8 @@ export default function WishlistPage() {
                           alt={product.name}
                           className="w-full h-full object-cover hover:scale-110 transition-transform"
                         />
-                        <div className="absolute top-3 left-3 bg-green-700 text-white text-xs font-bold px-3 py-1 rounded">
-                          In Stock
+                        <div className={`absolute top-3 left-3 text-white text-xs font-bold px-3 py-1 rounded ${isProductOutOfStock(product) ? 'bg-red-600' : 'bg-green-700'}`}>
+                          {isProductOutOfStock(product) ? 'Out of Stock' : 'In Stock'}
                         </div>
                       </div>
 
@@ -133,10 +139,12 @@ export default function WishlistPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAddToCart(product.id)}
-                            className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2"
+                            disabled={isProductOutOfStock(product)}
+                            className="flex-1 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            style={{ background: isProductOutOfStock(product) ? '#9ca3af' : '#16a34a', color: '#fff' }}
                           >
                             <ShoppingCart size={18} />
-                            Add
+                            {isProductOutOfStock(product) ? 'Out of Stock' : 'Add'}
                           </button>
                           <button
                             onClick={() => removeFromWishlist(product.id)}

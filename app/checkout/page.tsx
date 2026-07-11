@@ -3,6 +3,7 @@
 import { useStore } from '@/lib/store';
 import { AdminProduct } from '@/lib/admin-store';
 import { calculateShipping, DEFAULT_SHIPPING_ZONES, PincodeMapping, ShippingZone } from '@/lib/shipping';
+import { getVariationStock, isVariationOutOfStock } from '@/lib/inventory';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Truck, Lock, Phone, MapPin, Tag, X, CheckCircle, Building2 } from 'lucide-react';
@@ -181,6 +182,28 @@ export default function CheckoutPage() {
     if (!validateForm()) return;
     setLoading(true);
     setError('');
+
+    // Validate cart stock before payment
+    const stockErrors: string[] = [];
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.productId);
+      const variation = product?.variations.find(v => v.id === item.variationId);
+      if (!product || !variation) {
+        stockErrors.push(`Product not found for an item in your cart.`);
+        continue;
+      }
+      const stock = getVariationStock(product, variation.id);
+      if (isVariationOutOfStock(product, variation.id)) {
+        stockErrors.push(`${product.name} (${variation.name}) is out of stock.`);
+      } else if (item.quantity > stock) {
+        stockErrors.push(`${product.name} (${variation.name}) has only ${stock} available. Please reduce quantity.`);
+      }
+    }
+    if (stockErrors.length > 0) {
+      setError(stockErrors.join(' '));
+      setLoading(false);
+      return;
+    }
     try {
       const loaded = await loadRazorpayScript();
       if (!loaded) throw new Error('Razorpay SDK failed to load');
@@ -286,12 +309,25 @@ export default function CheckoutPage() {
 
   const inputCls = 'px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-700 w-full';
 
-  if (cart.length === 0) {
+  const cartStockIssues = cart.some((item) => {
+    const product = products.find((p) => p.id === item.productId);
+    const variation = product?.variations.find((v) => v.id === item.variationId);
+    if (!product || !variation) return true;
+    return isVariationOutOfStock(product, variation.id) || item.quantity > getVariationStock(product, variation.id);
+  });
+
+  if (cart.length === 0 || cartStockIssues) {
     return (
       <main className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
-          <p className="text-gray-600 mb-8">Add some products before proceeding to checkout</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            {cartStockIssues ? 'Stock issue in cart' : 'Your cart is empty'}
+          </h1>
+          <p className="text-gray-600 mb-8">
+            {cartStockIssues
+              ? 'One or more items in your cart are out of stock or exceed available quantity. Please review your cart.'
+              : 'Add some products before proceeding to checkout'}
+          </p>
           <Link href="/" className="inline-block bg-green-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-800 transition">
             Continue Shopping
           </Link>
@@ -423,7 +459,7 @@ export default function CheckoutPage() {
                     <p className="text-sm text-blue-800">
                       {shippingInfo.free
                         ? 'You qualify for free shipping!'
-                        : `Zone ${shippingInfo.zone} shipping: ₹${shippingInfo.baseRate} + ${settings.shippingZones[shippingInfo.zone]?.gstPercent || 18}% GST = ₹${shippingInfo.total}`}
+                        : `Shipping charge: ₹${shippingInfo.total} (GST included)`}
                     </p>
                   ) : (
                     <p className="text-sm text-blue-800">Enter pincode to calculate shipping</p>
@@ -522,7 +558,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Shipping {shippingInfo.free ? '' : `(Zone ${shippingInfo.zone})`}</span>
+                  <span>Shipping</span>
                   <span className={shipping === 0 ? 'text-green-700 font-semibold' : ''}>
                     {shipping === 0 ? 'FREE' : `₹${shipping}`}
                   </span>

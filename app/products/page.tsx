@@ -9,7 +9,7 @@ const PRICE_MAX = 1000;
 
 export default function AllProductsPage() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [allCategories, setAllCategories] = useState<string[]>(['Sweeteners', 'Combo Deals', 'New']);
+  const [allCategories, setAllCategories] = useState<string[]>(['Sweeteners', 'Combo Deals']);
   const [filters, setFilters] = useState<FilterState | null>(null);
 
   useEffect(() => {
@@ -18,8 +18,8 @@ export default function AllProductsPage() {
     fetch('/api/products-get').then(r => r.json()).then(({ products: p }) => {
       if (p) {
         setAllProducts(p);
-        const cats = Array.from(new Set(['Sweeteners', 'Combo Deals', 'New', ...p.map((pr: any) => pr.category as string)]))
-          .filter(c => c && c !== 'Uncategorized');
+        const cats = Array.from(new Set(['Sweeteners', 'Combo Deals', ...p.map((pr: any) => pr.category as string)]))
+          .filter(c => c && c !== 'Uncategorized' && c !== 'New');
         setAllCategories(cats);
         const selected = cat ? [cat] : cats;
         setFilters({ categories: selected, maxPrice: PRICE_MAX, sort: 'default' });
@@ -30,9 +30,9 @@ export default function AllProductsPage() {
   const filtered = useMemo(() => {
     if (!filters) return [];
     let list = allProducts.filter((p) => filters.categories.includes(p.category) && p.category !== 'Uncategorized');
-    list = list.filter((p) => Math.min(...p.variations.map((v) => v.price)) <= filters.maxPrice);
-    if (filters.sort === 'price-asc') list = [...list].sort((a, b) => Math.min(...a.variations.map(v => v.price)) - Math.min(...b.variations.map(v => v.price)));
-    if (filters.sort === 'price-desc') list = [...list].sort((a, b) => Math.min(...b.variations.map(v => v.price)) - Math.min(...a.variations.map(v => v.price)));
+    list = list.filter((p: any) => Math.min(...p.variations.map((v: any) => v.price)) <= filters.maxPrice);
+    if (filters.sort === 'price-asc') list = [...list].sort((a: any, b: any) => Math.min(...a.variations.map((v: any) => v.price)) - Math.min(...b.variations.map((v: any) => v.price)));
+    if (filters.sort === 'price-desc') list = [...list].sort((a: any, b: any) => Math.min(...b.variations.map((v: any) => v.price)) - Math.min(...a.variations.map((v: any) => v.price)));
     if (filters.sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
     if (filters.sort === 'popular') list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
     return list;

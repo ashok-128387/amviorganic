@@ -5,6 +5,7 @@ import { Heart, Star, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { useState } from 'react';
+import { isProductOutOfStock, isVariationOutOfStock } from '@/lib/inventory';
 
 interface ProductCardProps {
   product: Product;
@@ -16,10 +17,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const minPrice = Math.min(...product.variations.map((v) => v.price));
   const maxPrice = Math.max(...product.variations.map((v) => v.price));
   const [added, setAdded] = useState(false);
+  const outOfStock = isProductOutOfStock(product);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    const variation = product.variations[0];
+    if (outOfStock) return;
+    const variation = product.variations.find(v => (v.stock ?? 0) > 0) || product.variations[0];
     if (!variation) return;
     addToCart({ id: Math.random().toString(), productId: product.id, variationId: variation.id, quantity: 1, addedAt: new Date() });
     setAdded(true);
@@ -42,8 +45,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             <img src={product.images[1]} alt={`${product.name} back`} loading="lazy"
               className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           )}
-          <div className="absolute top-2 left-2 bg-green-700 text-white text-xs font-bold px-2 py-0.5 rounded">
-            In Stock
+          <div className={`absolute top-2 left-2 text-white text-xs font-bold px-2 py-0.5 rounded ${outOfStock ? 'bg-red-600' : 'bg-green-700'}`}>
+            {outOfStock ? 'Out of Stock' : 'In Stock'}
           </div>
           <button onClick={(e) => { e.preventDefault(); inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id); }}
             className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-md hover:shadow-lg transition">
@@ -79,10 +82,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Add to Cart button */}
         <button onClick={handleAddToCart}
-          className="mt-auto pt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition"
-          style={{ background: added ? '#2a6b3e' : '#1e4a2a', color: '#fff' }}>
+          disabled={outOfStock}
+          className="mt-auto pt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: outOfStock ? '#9ca3af' : added ? '#2a6b3e' : '#1e4a2a', color: '#fff' }}>
           <ShoppingCart size={15} />
-          {added ? 'Added!' : 'Add to Cart'}
+          {outOfStock ? 'Out of Stock' : added ? 'Added!' : 'Add to Cart'}
         </button>
       </div>
     </div>

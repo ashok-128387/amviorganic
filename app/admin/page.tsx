@@ -23,8 +23,8 @@ export default function AdminDashboard() {
   const pending = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
 
   // Low stock: variations with stock < 10
-  const lowStock = products.flatMap(p =>
-    p.variations.filter(v => v.stock < 10).map(v => ({ product: p.name, variation: v.name, stock: v.stock }))
+  const lowStock = products.flatMap((p: any) =>
+    p.variations.filter((v: any) => v.stock < 10).map((v: any) => ({ product: p.name, variation: v.name, stock: v.stock }))
   );
 
   // 7-day revenue chart

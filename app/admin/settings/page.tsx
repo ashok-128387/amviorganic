@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { SiteSettings } from '@/lib/admin-store';
+import { DEFAULT_POLICY_CONTENT } from '@/lib/policies';
+import RichTextEditor from '@/components/rich-text-editor';
 import { Save, CheckCircle } from 'lucide-react';
 
 const DEFAULT_SETTINGS: SiteSettings = {
   storeName: 'AMVI Organics',
   contactEmail: 'contact@amviorganics.com',
   contactPhone: '+91-8748899100',
-  address: 'Mandya, Karnataka, India',
+  address: 'Bengaluru, Karnataka, India',
   instagramUrl: 'https://instagram.com/amviorganics',
   facebookUrl: 'https://facebook.com/amviorganics',
   whatsappNumber: '918748899100',
@@ -22,6 +24,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
     E: { baseRate: 69, gstPercent: 18, label: 'Special / Remote' },
   },
   shippingPincodes: {},
+  announcementText: 'FREE SHIPPING on orders above ₹{threshold} | Use code WELCOME10 for 10% OFF',
+  policyContent: DEFAULT_POLICY_CONTENT,
 };
 
 function parseSettings(settings: Record<string, string>): Partial<SiteSettings> {
@@ -36,12 +40,16 @@ function parseSettings(settings: Record<string, string>): Partial<SiteSettings> 
     freeShippingThreshold: Number(settings.freeShippingThreshold),
     shippingCharge: Number(settings.shippingCharge),
     taxPercent: Number(settings.taxPercent),
+    announcementText: settings.announcementText,
   };
   try {
     if (settings.shippingZones) parsed.shippingZones = JSON.parse(settings.shippingZones);
   } catch {}
   try {
     if (settings.shippingPincodes) parsed.shippingPincodes = JSON.parse(settings.shippingPincodes);
+  } catch {}
+  try {
+    if (settings.policyContent) parsed.policyContent = JSON.parse(settings.policyContent);
   } catch {}
   return parsed;
 }
@@ -107,6 +115,7 @@ export default function AdminSettingsPage() {
       ...form,
       shippingZones: JSON.stringify(form.shippingZones),
       shippingPincodes: JSON.stringify(form.shippingPincodes),
+      policyContent: JSON.stringify(form.policyContent || {}),
     };
     await fetch('/api/settings-save', {
       method: 'POST',
@@ -147,7 +156,7 @@ export default function AdminSettingsPage() {
         <Field label="Store Name" k="storeName" placeholder="AMVI Organics" />
         <Field label="Contact Email" k="contactEmail" type="email" placeholder="contact@amviorganics.com" />
         <Field label="Contact Phone" k="contactPhone" placeholder="+91-8748899100" />
-        <Field label="Address" k="address" placeholder="Mandya, Karnataka, India" />
+        <Field label="Address" k="address" placeholder="Bengaluru, Karnataka, India" />
       </div>
 
       {/* Social */}
@@ -188,6 +197,52 @@ export default function AdminSettingsPage() {
           <p>Free shipping on orders above <strong>₹{form.freeShippingThreshold}</strong></p>
           <p>Tax applied: <strong>{form.taxPercent}%</strong></p>
         </div>
+      </div>
+
+      {/* Announcement Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">📢 Announcement Bar</p>
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Marquee Text</label>
+          <textarea
+            value={form.announcementText}
+            onChange={e => set('announcementText', e.target.value)}
+            rows={2}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700"
+            placeholder="FREE SHIPPING on orders above ₹{threshold} | Use code WELCOME10 for 10% OFF"
+          />
+          <p className="text-xs text-gray-500 mt-1.5">
+            Use <code className="text-green-700">{'{threshold}'}</code> to insert the free-shipping threshold dynamically.
+          </p>
+        </div>
+      </div>
+
+      {/* Policy Pages */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">📄 Policy Pages</p>
+        <p className="text-xs text-gray-500">
+          Edit the default content below. HTML tags are supported. Use the toolbar to format text, add headings, lists, links, and highlight boxes.
+        </p>
+        {[
+          { key: 'privacy', label: 'Privacy Policy' },
+          { key: 'terms', label: 'Terms & Conditions' },
+          { key: 'shipping', label: 'Shipping Policy' },
+          { key: 'return', label: 'Return, Refund & Cancellation Policy' },
+        ].map(({ key, label }) => (
+          <div key={key}>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
+            <RichTextEditor
+              value={form.policyContent?.[key] || ''}
+              onChange={val => {
+                const next = { ...form.policyContent, [key]: val };
+                if (!val) delete (next as any)[key];
+                set('policyContent', next);
+              }}
+              rows={8}
+              placeholder={`Edit ${label} content here.`}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Shipping Zones */}
