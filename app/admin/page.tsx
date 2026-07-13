@@ -19,7 +19,7 @@ export default function AdminDashboard() {
     fetch('/api/users-get').then(r => r.json()).then(({ users: u }) => { if (u) setUsers(u); });
   }, []);
 
-  const revenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const revenue = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded').reduce((sum, o) => sum + o.total, 0);
   const pending = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
 
   // Low stock: variations with stock < 10
@@ -36,7 +36,7 @@ export default function AdminDashboard() {
   const dayRevenue = days.map(d => ({
     label: d.toLocaleDateString('en-IN', { weekday: 'short' }),
     value: orders
-      .filter(o => new Date(o.createdAt).toDateString() === d.toDateString())
+      .filter(o => o.status !== 'cancelled' && o.status !== 'refunded' && new Date(o.createdAt).toDateString() === d.toDateString())
       .reduce((s, o) => s + o.total, 0),
   }));
   const maxRev = Math.max(...dayRevenue.map(d => d.value), 1);
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
 
   const statusColors: Record<string, string> = {
     pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6',
-    delivered: '#10b981', cancelled: '#ef4444', completed: '#10b981',
+    delivered: '#10b981', cancelled: '#ef4444', completed: '#10b981', refunded: '#a855f7',
   };
 
   return (

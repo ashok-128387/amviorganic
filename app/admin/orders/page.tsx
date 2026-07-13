@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AdminOrder, AdminProduct } from '@/lib/admin-store';
 import { ChevronDown, ChevronUp, X, Truck, MapPin, Phone, Mail, Package, Download } from 'lucide-react';
 
-const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'completed'];
+const STATUS_OPTIONS: AdminOrder['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'completed', 'refunded'];
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   pending:    { bg: '#fef3c718', text: '#d97706' },
@@ -13,6 +13,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   delivered:  { bg: '#f0fdf4',   text: '#16a34a' },
   cancelled:  { bg: '#fef2f2',   text: '#ef4444' },
   completed:  { bg: '#f0fdf4',   text: '#16a34a' },
+  refunded:   { bg: '#fdf4ff',   text: '#a855f7' },
 };
 
 export default function AdminOrdersPage() {

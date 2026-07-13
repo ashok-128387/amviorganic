@@ -54,7 +54,7 @@ export default function BannerSlider() {
             className="object-cover object-center"
             priority={i === 0}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
-            quality={90}
+            quality={100}
           />
         </div>
       ))}
@@ -101,26 +101,31 @@ export default function BannerSlider() {
 
       <style jsx>{`
         .banner-section {
-          height: 220px;
+          height: 260px;
         }
         @media (min-width: 640px) {
           .banner-section {
-            height: 320px;
+            height: 380px;
           }
         }
         @media (min-width: 768px) {
           .banner-section {
-            height: 400px;
+            height: 480px;
           }
         }
         @media (min-width: 1024px) {
           .banner-section {
-            height: 480px;
+            height: 580px;
           }
         }
         @media (min-width: 1280px) {
           .banner-section {
-            height: 540px;
+            height: 680px;
+          }
+        }
+        @media (min-width: 1536px) {
+          .banner-section {
+            height: 750px;
           }
         }
       `}</style>

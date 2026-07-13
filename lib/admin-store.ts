@@ -40,7 +40,7 @@ export interface AdminOrder {
   email: string;
   phone: string;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed' | 'refunded';
   items: { name: string; qty: number; quantity?: number; price: number; productId?: string; variationId?: string }[];
   shippingAddress?: string;
   billingAddress?: string;

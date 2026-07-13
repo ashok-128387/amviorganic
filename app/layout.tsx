@@ -35,6 +35,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} scroll-smooth`} suppressHydrationWarning>
+      <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-93NEC8QN66" />
+        <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-93NEC8QN66');` }} />
+      </head>
       <body className="font-sans antialiased bg-white text-gray-900">
         <MarqueeBanner />
         <Header />

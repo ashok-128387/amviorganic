@@ -30,9 +30,6 @@ export default function MarqueeBanner() {
 
   const items = [
     <span key="1"><span className="marquee-dot"></span>&nbsp; {text}</span>,
-    <span key="2"><span className="marquee-dot"></span>&nbsp; 100% Natural &amp; Organic Jaggery Products <span className="marquee-sep">|</span> FREE SHIPPING on orders above ₹{threshold}</span>,
-    <span key="3"><span className="marquee-dot"></span>&nbsp; Use code <strong>WELCOME10</strong> for 10% off your first order</span>,
-    <span key="4"><span className="marquee-dot"></span>&nbsp; FREE SHIPPING on orders above ₹{threshold} <span className="marquee-sep">|</span> COD Available</span>,
   ];
 
   return (
