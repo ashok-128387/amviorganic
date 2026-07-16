@@ -28,19 +28,22 @@ export default function MarqueeBanner() {
     ? announcementText.replace(/\{threshold\}/g, threshold.toString())
     : `FREE SHIPPING on orders above ₹${threshold} | Use code WELCOME10 for 10% OFF`;
 
-  const items = [
-    <span key="1"><span className="marquee-dot"></span>&nbsp; {text}</span>,
-  ];
+  // Repeat the message many times so the duplicated track is always wider than the viewport.
+  // This makes the marquee loop appear continuous without gaps.
+  const REPEAT_COUNT = 12;
+  const repeatedItems = Array.from({ length: REPEAT_COUNT }, (_, i) => (
+    <span key={i}><span className="marquee-dot"></span>&nbsp; {text}</span>
+  ));
 
   return (
     <div className="marquee-wrap">
       <div className="marquee-track">
         {/* First set */}
-        {items.map((item, i) => (
+        {repeatedItems.map((item, i) => (
           <div key={`a-${i}`} className="marquee-item">{item}</div>
         ))}
         {/* Duplicate set for seamless loop */}
-        {items.map((item, i) => (
+        {repeatedItems.map((item, i) => (
           <div key={`b-${i}`} className="marquee-item">{item}</div>
         ))}
       </div>
@@ -55,7 +58,7 @@ export default function MarqueeBanner() {
         .marquee-track {
           display: flex;
           width: max-content;
-          animation: marquee 22s linear infinite;
+          animation: marquee 35s linear infinite;
         }
         .marquee-track:hover {
           animation-play-state: paused;

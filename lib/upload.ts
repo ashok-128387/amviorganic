@@ -1,5 +1,11 @@
-// Compress image to max 800px and convert to webp before upload
-export async function compressImage(file: File, maxPx = 800, quality = 0.75): Promise<Blob> {
+// Compress image before upload. Defaults are tuned for small thumbnails/icons.
+// For full-width banners use maxPx=1920 (or higher) and quality >= 0.9 to avoid blur.
+export async function compressImage(
+  file: File,
+  maxPx = 800,
+  quality = 0.75,
+  format: 'image/webp' | 'image/jpeg' = 'image/webp'
+): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -14,16 +20,21 @@ export async function compressImage(file: File, maxPx = 800, quality = 0.75): Pr
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(blob => resolve(blob!), 'image/webp', quality);
+      canvas.toBlob(blob => resolve(blob!), format, quality);
     };
     img.src = url;
   });
 }
 
-export async function uploadImage(file: File): Promise<string> {
-  const compressed = await compressImage(file);
+export async function uploadImage(
+  file: File,
+  maxPx = 800,
+  quality = 0.75,
+  format: 'image/webp' | 'image/jpeg' = 'image/webp'
+): Promise<string> {
+  const compressed = await compressImage(file, maxPx, quality, format);
   const fd = new FormData();
-  fd.append('file', compressed, 'image.webp');
+  fd.append('file', compressed, `image.${format.split('/')[1]}`);
   const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
   const { url } = await res.json();
   return url;

@@ -99,6 +99,17 @@ export async function initDb() {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS checkout_sessions (
+      receipt TEXT PRIMARY KEY,
+      razorpay_order_id TEXT,
+      amount REAL NOT NULL,
+      line_items_total REAL,
+      items TEXT,
+      contact TEXT,
+      email TEXT,
+      created_at TEXT NOT NULL
+    );
   `);
 
   await runMigrations();
@@ -139,6 +150,22 @@ async function runMigrations() {
   // Add verified_purchase column to reviews
   if (!(await columnExists('reviews', 'verified_purchase'))) {
     await db.execute({ sql: 'ALTER TABLE reviews ADD COLUMN verified_purchase INTEGER DEFAULT 0', args: [] });
+  }
+  // Add checkout_sessions table for Razorpay Magic Checkout
+  if (!(await columnExists('checkout_sessions', 'amount'))) {
+    await db.execute({
+      sql: `CREATE TABLE IF NOT EXISTS checkout_sessions (
+        receipt TEXT PRIMARY KEY,
+        razorpay_order_id TEXT,
+        amount REAL NOT NULL,
+        line_items_total REAL,
+        items TEXT,
+        contact TEXT,
+        email TEXT,
+        created_at TEXT NOT NULL
+      )`,
+      args: [],
+    });
   }
 }
 

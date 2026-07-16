@@ -73,7 +73,7 @@ export default function AdminProductsPage() {
   const handleMultiFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const urls = await Promise.all(files.map(uploadImage));
+    const urls = await Promise.all(files.map(f => uploadImage(f)));
     if (urls.length) setForm(f => ({ ...f, image: urls[0], images: urls }));
   };
 

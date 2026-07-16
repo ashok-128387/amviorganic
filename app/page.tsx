@@ -502,7 +502,7 @@ export default function Home() {
                 <path d="M18 26 Q40 30 62 26" stroke="#1e4a2a" strokeWidth="1.3" fill="none"/>
                 <path d="M18 54 Q40 50 62 54" stroke="#1e4a2a" strokeWidth="1.3" fill="none"/>
               </svg>
-              <span className="text-center text-xs text-gray-600 leading-snug">250 Global Testing Standards</span>
+              <span className="text-center text-xs text-gray-600 leading-snug">Global Testing Standards</span>
             </div>
 
           </div>

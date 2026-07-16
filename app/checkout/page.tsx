@@ -172,7 +172,7 @@ export default function CheckoutPage() {
     new Promise<boolean>(resolve => {
       if (window.Razorpay) return resolve(true);
       const s = document.createElement('script');
-      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.src = 'https://checkout.razorpay.com/v1/magic-checkout.js';
       s.onload = () => resolve(true);
       s.onerror = () => resolve(false);
       document.head.appendChild(s);
@@ -206,101 +206,143 @@ export default function CheckoutPage() {
     }
     try {
       const loaded = await loadRazorpayScript();
-      if (!loaded) throw new Error('Razorpay SDK failed to load');
+      if (!loaded) throw new Error('Razorpay Magic Checkout SDK failed to load');
 
-      const res = await fetch('/api/create-razorpay-order', {
+      // Build Magic Checkout line items (subtotal before discount)
+      const lineItems = cart.map((item) => {
+        const product = products.find((p) => p.id === item.productId);
+        const variation = product?.variations.find((v) => v.id === item.variationId);
+        return {
+          sku: product?.sku || item.productId,
+          variant_id: variation?.id || item.variationId,
+          price: variation?.price || 0,
+          offer_price: variation?.price || 0,
+          quantity: item.quantity,
+          name: `${product?.name || 'Product'} (${variation?.name || 'Default'})`,
+        };
+      });
+
+      const orderRes = await fetch('/api/create-razorpay-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: total }),
+        body: JSON.stringify({
+          amount: total,
+          line_items_total: cartTotal,
+          items: lineItems,
+        }),
       });
-      const { orderId, error: orderError } = await res.json();
-      if (orderError) throw new Error(orderError);
+      const { orderId, receipt, error: orderError } = await orderRes.json();
+      if (orderError || !orderId) throw new Error(orderError || 'Failed to create order');
 
       const effectiveBilling = sameAsDelivery ? deliveryAddress : billingAddress;
 
       const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: total * 100,
-          currency: 'INR',
-          order_id: orderId,
-          name: 'AMVI Organics',
-          description: `Order for ${cart.length} item(s)`,
-          prefill: {
-            name: `${formData.firstName} ${formData.lastName}`,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        one_click_checkout: true,
+        show_coupons: true,
+        amount: Math.round(total * 100),
+        currency: 'INR',
+        order_id: orderId,
+        name: 'AMVI Organics',
+        description: `Order for ${cart.length} item(s)`,
+        prefill: {
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          contact: formData.phone,
+          coupon_code: appliedCoupon?.code || '',
+        },
+        notes: {
+          receipt: receipt || '',
+          customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        },
+        handler: async (response: any) => {
+          // Verify payment signature server-side before saving the order
+          const verifyRes = await fetch('/api/verify-razorpay-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          const verify = await verifyRes.json();
+          if (!verify.valid) {
+            setError('Payment verification failed. Please contact support.');
+            setLoading(false);
+            return;
+          }
+
+          const orderItems = cart.map((item) => {
+            const product = products.find((p) => p.id === item.productId);
+            const variation = product?.variations.find((v) => v.id === item.variationId);
+            return { productId: item.productId, variationId: item.variationId, quantity: item.quantity, price: variation?.price || 0, name: `${product?.name} (${variation?.name})` };
+          });
+          const shippingAddressStr = `${deliveryAddress.address}, ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.pincode}`;
+          const orderData = {
+            id: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            userId: user?.id || '',
+            items: orderItems,
+            total,
+            status: 'processing' as const,
+            razorpayOrderId: response.razorpay_order_id || '',
+            razorpayPaymentId: response.razorpay_payment_id || '',
             email: formData.email,
-            contact: formData.phone,
-          },
-          handler: async (response: any) => {
-            const orderItems = cart.map((item) => {
-              const product = products.find((p) => p.id === item.productId);
-              const variation = product?.variations.find((v) => v.id === item.variationId);
-              return { productId: item.productId, variationId: item.variationId, quantity: item.quantity, price: variation?.price || 0, name: `${product?.name} (${variation?.name})` };
-            });
-            const shippingAddressStr = `${deliveryAddress.address}, ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.pincode}`;
-            const orderData = {
-              id: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-              userId: user?.id || '',
-              items: orderItems,
-              total,
-              status: 'processing' as const,
-              razorpayOrderId: response.razorpay_order_id || '',
-              razorpayPaymentId: response.razorpay_payment_id || '',
+            phone: formData.phone,
+            shippingAddress: shippingAddressStr,
+            createdAt: new Date(),
+          };
+          addOrder(orderData);
+          clearCart();
+          if (appliedCoupon) {
+            fetch('/api/coupon-use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
+          }
+          await fetch('/api/orders-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...orderData,
+              customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+              billingAddress: `${effectiveBilling.address}, ${effectiveBilling.city}, ${effectiveBilling.state} ${effectiveBilling.pincode}`,
+              gstNumber: wantsGst ? gstNumber : '',
+              gstCompany: wantsGst ? gstCompany : '',
+              items: orderItems.map((item) => {
+                const product = products.find((p) => p.id === item.productId);
+                const variation = product?.variations.find((v) => v.id === item.variationId);
+                return { productId: item.productId, variationId: item.variationId, name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+              }),
+              subtotal: cartTotal, discount, shipping, tax,
+            }),
+          });
+          fetch('/api/send-order-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: orderData.id,
+              customerName: `${formData.firstName} ${formData.lastName}`.trim(),
               email: formData.email,
               phone: formData.phone,
+              items: orderItems.map((item) => {
+                const product = products.find((p) => p.id === item.productId);
+                const variation = product?.variations.find((v) => v.id === item.variationId);
+                return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
+              }),
+              subtotal: cartTotal,
+              discount,
+              shipping,
+              tax,
+              total,
               shippingAddress: shippingAddressStr,
-              createdAt: new Date(),
-            };
-            addOrder(orderData);
-            clearCart();
-            if (appliedCoupon) {
-              fetch('/api/coupon-use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
-            }
-            await fetch('/api/orders-save', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ...orderData,
-                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                billingAddress: `${effectiveBilling.address}, ${effectiveBilling.city}, ${effectiveBilling.state} ${effectiveBilling.pincode}`,
-                gstNumber: wantsGst ? gstNumber : '',
-                gstCompany: wantsGst ? gstCompany : '',
-                items: orderItems.map((item) => {
-                  const product = products.find((p) => p.id === item.productId);
-                  const variation = product?.variations.find((v) => v.id === item.variationId);
-                  return { productId: item.productId, variationId: item.variationId, name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
-                }),
-                subtotal: cartTotal, discount, shipping, tax,
-              }),
-            });
-            fetch('/api/send-order-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                orderId: orderData.id,
-                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                email: formData.email,
-                phone: formData.phone,
-                items: orderItems.map((item) => {
-                  const product = products.find((p) => p.id === item.productId);
-                  const variation = product?.variations.find((v) => v.id === item.variationId);
-                  return { name: `${product?.name} (${variation?.name})`, qty: item.quantity, price: item.price };
-                }),
-                subtotal: cartTotal,
-                discount,
-                shipping,
-                tax,
-                total,
-                shippingAddress: shippingAddressStr,
-                createdAt: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
-              }),
-            });
-            router.push(`/order-confirmation?orderId=${orderData.id}`);
-          },
-          modal: { ondismiss: () => setLoading(false) },
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-        setLoading(false);
+              createdAt: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
+            }),
+          });
+          router.push(`/order-confirmation?orderId=${orderData.id}`);
+        },
+        modal: { ondismiss: () => setLoading(false) },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      setLoading(false);
     } catch (err: any) {
       setError(err?.message || 'Failed to initialize payment. Please try again.');
       setLoading(false);
@@ -579,7 +621,7 @@ export default function CheckoutPage() {
                 style={{ background: '#1e4a2a' }}
                 onMouseEnter={e => !loading && (e.currentTarget.style.background = '#2a6b3e')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#1e4a2a')}>
-                {loading ? 'Processing...' : `Pay ₹${total.toLocaleString('en-IN')} with Razorpay`}
+                {loading ? 'Processing...' : `Pay ₹${total.toLocaleString('en-IN')} with Razorpay Magic Checkout`}
               </button>
 
               <p className="mt-3 text-center text-xs text-gray-500">💳 Secure Payment Powered by Razorpay</p>

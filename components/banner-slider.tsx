@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const DEFAULT_BANNERS = [
@@ -46,15 +45,17 @@ export default function BannerSlider() {
   return (
     <section className="banner-section relative w-full overflow-hidden bg-[#f5f2ed]" data-banner>
       {banners.map((src, i) => (
-        <div key={`${src}-${i}`} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
-          <Image
+        <div
+          key={`${src}-${i}`}
+          className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+        >
+          {/* Standard img renders the original asset full-width without upscaling blur */}
+          <img
             src={src}
             alt={`Banner ${i + 1}`}
-            fill
-            className="object-cover object-center"
-            priority={i === 0}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
-            quality={100}
+            className="w-full h-full object-cover object-center"
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
           />
         </div>
       ))}
@@ -101,31 +102,25 @@ export default function BannerSlider() {
 
       <style jsx>{`
         .banner-section {
-          height: 260px;
+          /* Mobile: 16:9 */
+          aspect-ratio: 16 / 9;
         }
         @media (min-width: 640px) {
           .banner-section {
-            height: 380px;
-          }
-        }
-        @media (min-width: 768px) {
-          .banner-section {
-            height: 480px;
+            /* Tablet: 2:1 */
+            aspect-ratio: 2 / 1;
           }
         }
         @media (min-width: 1024px) {
           .banner-section {
-            height: 580px;
+            /* Laptop+: matches the admin-recommended 1920×540 (≈3.55:1) for full-width banners */
+            aspect-ratio: 32 / 9;
           }
         }
-        @media (min-width: 1280px) {
+        @supports not (aspect-ratio: 16 / 9) {
           .banner-section {
-            height: 680px;
-          }
-        }
-        @media (min-width: 1536px) {
-          .banner-section {
-            height: 750px;
+            height: 0;
+            padding-bottom: 56.25%;
           }
         }
       `}</style>

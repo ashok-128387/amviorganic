@@ -35,7 +35,7 @@ export default function AdminBannersPage() {
   };
 
   const handleFileUpload = async (file: File, index: number) => {
-    const url = await uploadImage(file);
+    const url = await uploadImage(file, 1920, 0.92);
     if (!url) return;
     setBanners(prev => {
       const next = [...prev];
@@ -71,7 +71,7 @@ export default function AdminBannersPage() {
         <h1 className="text-xl font-bold text-gray-900">Homepage Banners</h1>
         <p className="text-sm text-gray-500">Add, replace, reorder or remove website banner images.</p>
         <p className="text-xs text-gray-400 mt-1">
-          Recommended: 1920 × 540 px (or 16:9 to 3.5:1 ratio), max 1 MB, WebP or JPEG for best quality.
+          Recommended: 1920 × 540 px (3.55:1 / 32:9 ratio) for full-width laptop banners. Uploads are kept at 1920px wide with high quality to avoid blur.
         </p>
       </div>
 
@@ -138,7 +138,7 @@ export default function AdminBannersPage() {
             accept="image/*"
             className="hidden"
             id="new-banner-upload"
-            onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f).then(url => { if (url) setNewUrl(url); }); }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, 1920, 0.92).then(url => { if (url) setNewUrl(url); }); }}
           />
           <button onClick={() => document.getElementById('new-banner-upload')?.click()}
             className="px-3 py-2 rounded-lg text-xs font-semibold transition"
